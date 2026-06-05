@@ -1,0 +1,1506 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Alias — UI Design System & Screen Mockups</title>
+<!--
+  Alias Game · Design System Gallery
+  ----------------------------------
+  PURPOSE: a presentable, token-driven mockup that is also a FAITHFUL React Native proxy.
+  Porting rules baked in here so the RN port is mechanical, not a rewrite:
+    • Flexbox only (no CSS grid / float). RN flex-direction defaults to column; we set row explicitly.
+    • All values come from CSS variables that mirror src/theme (colors, spacing, radii, type).
+    • Explicit pixel sizes. No rem/%. Touch states shown as static variants (no hover-only styling).
+    • Every block is named after its future RN component (see /* RN: <Name> */ comments).
+  Tokens here are the source of truth to lift into src/theme/{colors,spacing,radii,typography}.ts
+-->
+<style>
+  /* ============================================================
+     DESIGN TOKENS  →  src/theme/*
+     Light is :root; dark overrides under body.dark.
+     ============================================================ */
+  :root {
+    /* neutrals */
+    --bg: #FFFFFF;
+    --surface: #F7F8FA;
+    --surface-muted: #EDEFF3;
+    --border: #E4E7EE;
+    --text: #16181D;
+    --text-muted: #5C616E;
+    --text-inverse: #FFFFFF;
+
+    /* brand accent (refined-playful indigo) */
+    --primary: #5B5BD6;
+    --primary-pressed: #4A4AC4;
+    --primary-soft: #ECECFB;
+    --on-primary: #FFFFFF;
+
+    /* semantic gameplay actions — always paired with an icon, never color alone */
+    --correct: #16A34A;
+    --correct-pressed: #128A3E;
+    --correct-soft: #E5F5EC;
+    --on-correct: #FFFFFF;
+    --skip: #F0A020;
+    --skip-pressed: #D98A0A;
+    --skip-soft: #FCF1DC;
+    --on-skip: #16181D;        /* dark text on amber for AA contrast */
+    --foul: #E5484D;
+    --foul-pressed: #C93A3F;
+    --foul-soft: #FCE9EA;
+    --on-foul: #FFFFFF;
+    --golden: #E8B923;
+
+    /* team palette (vibrant, distinguishable; up to 8 teams) */
+    --team-1: #E5484D;  /* red    */
+    --team-2: #2E7DF6;  /* blue   */
+    --team-3: #16A34A;  /* green  */
+    --team-4: #F5A623;  /* amber  */
+    --team-5: #8B5CF6;  /* violet */
+    --team-6: #0EA5A4;  /* teal   */
+    --team-7: #EC4899;  /* pink   */
+    --team-8: #F2691E;  /* orange */
+
+    /* spacing scale (pt) */
+    --s-xs: 4px; --s-sm: 8px; --s-md: 16px; --s-lg: 24px; --s-xl: 32px; --s-xxl: 48px;
+
+    /* radii (pt) */
+    --r-sm: 8px; --r-md: 12px; --r-lg: 16px; --r-xl: 24px; --r-full: 9999px;
+
+    /* elevation → RN shadow{Color,Opacity,Radius,Offset} + elevation */
+    --shadow-sm: 0 1px 2px rgba(16,24,40,.06), 0 1px 3px rgba(16,24,40,.10);
+    --shadow-md: 0 4px 14px rgba(16,24,40,.10);
+    --shadow-lg: 0 16px 40px rgba(16,24,40,.18);
+
+    /* motion → Reanimated durations */
+    --m-fast: 120ms; --m-base: 200ms; --m-slow: 320ms;
+
+    --font: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  }
+
+  body.dark {
+    --bg: #0E0F13;
+    --surface: #16181D;
+    --surface-muted: #21242C;
+    --border: #2A2D35;
+    --text: #F3F4F6;
+    --text-muted: #9AA0AD;
+    --text-inverse: #16181D;
+
+    --primary: #8585F0;
+    --primary-pressed: #7474E4;
+    --primary-soft: #232248;
+    --on-primary: #0E0F13;
+
+    --correct: #2BB673; --correct-pressed: #23A267; --correct-soft: #14301F; --on-correct: #06140C;
+    --skip: #F2B33D; --skip-pressed: #E0A227; --skip-soft: #322611; --on-skip: #16181D;
+    --foul: #F4565B; --foul-pressed: #E04449; --foul-soft: #321518; --on-foul: #16181D;
+    --golden: #F0CB4B;
+
+    --team-1: #F4565B; --team-2: #4F95FF; --team-3: #2BB673; --team-4: #F7B73D;
+    --team-5: #A07CFF; --team-6: #2BC0BF; --team-7: #F25CA8; --team-8: #FF8242;
+
+    --primary-soft: #232248;
+    --shadow-sm: 0 1px 2px rgba(0,0,0,.4);
+    --shadow-md: 0 6px 18px rgba(0,0,0,.5);
+    --shadow-lg: 0 20px 48px rgba(0,0,0,.6);
+  }
+
+  /* ============================================================
+     PAGE CHROME (gallery only — NOT ported to RN)
+     ============================================================ */
+  * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+  body {
+    margin: 0; font-family: var(--font);
+    background: var(--surface-muted); color: var(--text);
+    transition: background var(--m-base);
+  }
+  .topbar {
+    position: sticky; top: 0; z-index: 50;
+    display: flex; align-items: center; gap: var(--s-md);
+    padding: var(--s-md) var(--s-lg);
+    background: var(--bg); border-bottom: 1px solid var(--border);
+    box-shadow: var(--shadow-sm);
+  }
+  .topbar h1 { font-size: 18px; margin: 0; font-weight: 800; letter-spacing: -.3px; }
+  .topbar .sub { color: var(--text-muted); font-size: 13px; }
+  .spacer { flex: 1; }
+  .nav { display: flex; gap: var(--s-xs); background: var(--surface-muted); padding: 4px; border-radius: var(--r-full); }
+  .nav button {
+    border: 0; background: transparent; color: var(--text-muted);
+    padding: 8px 16px; border-radius: var(--r-full); font-weight: 600; font-size: 14px; cursor: pointer;
+  }
+  .nav button.active { background: var(--bg); color: var(--text); box-shadow: var(--shadow-sm); }
+  .toggle {
+    border: 1px solid var(--border); background: var(--surface); color: var(--text);
+    padding: 8px 14px; border-radius: var(--r-full); font-weight: 600; font-size: 13px; cursor: pointer;
+  }
+  main { padding: var(--s-xl) var(--s-lg) 80px; max-width: 1280px; margin: 0 auto; }
+  .panel { display: none; }
+  .panel.active { display: block; }
+  .section-title { font-size: 22px; font-weight: 800; margin: var(--s-xl) 0 var(--s-xs); letter-spacing: -.3px; }
+  .section-note { color: var(--text-muted); font-size: 14px; margin: 0 0 var(--s-md); max-width: 70ch; }
+  .group { background: var(--bg); border: 1px solid var(--border); border-radius: var(--r-lg); padding: var(--s-lg); margin-bottom: var(--s-md); }
+  .group h3 { margin: 0 0 4px; font-size: 15px; }
+  .group .desc { color: var(--text-muted); font-size: 13px; margin: 0 0 var(--s-md); }
+  .row { display: flex; flex-direction: row; flex-wrap: wrap; gap: var(--s-md); align-items: flex-start; }
+  .stack { display: flex; flex-direction: column; gap: var(--s-sm); }
+  .pill-label { font-size: 11px; color: var(--text-muted); text-align: center; margin-top: 6px; }
+  code.tok { font-family: ui-monospace, Menlo, monospace; font-size: 11px; color: var(--text-muted); }
+
+  /* token swatches */
+  .swatch { width: 96px; }
+  .swatch .chip { height: 56px; border-radius: var(--r-md); border: 1px solid var(--border); box-shadow: var(--shadow-sm); }
+  .swatch .name { font-size: 12px; font-weight: 600; margin-top: 6px; }
+  .swatch .val { font-size: 11px; color: var(--text-muted); }
+  .space-demo { background: var(--primary-soft); border-radius: var(--r-sm); }
+  .radius-demo { width: 72px; height: 72px; background: var(--primary-soft); border: 2px solid var(--primary); }
+
+  /* ============================================================
+     TYPOGRAPHY  →  src/theme/typography.ts
+     ============================================================ */
+  .t-display { font-size: 44px; line-height: 48px; font-weight: 800; letter-spacing: -.5px; }
+  .t-timer   { font-size: 56px; line-height: 56px; font-weight: 700; font-variant-numeric: tabular-nums; letter-spacing: -1px; }
+  .t-title   { font-size: 28px; line-height: 34px; font-weight: 700; letter-spacing: -.3px; }
+  .t-heading { font-size: 20px; line-height: 26px; font-weight: 600; }
+  .t-body    { font-size: 16px; line-height: 22px; font-weight: 400; }
+  .t-label   { font-size: 14px; line-height: 18px; font-weight: 600; }
+  .t-caption { font-size: 12px; line-height: 16px; font-weight: 400; }
+  .muted { color: var(--text-muted); }
+
+  /* ============================================================
+     PRIMITIVE COMPONENTS  →  src/components/ui
+     ============================================================ */
+
+  /* RN: Button */
+  .btn {
+    display: inline-flex; align-items: center; justify-content: center; gap: var(--s-sm);
+    min-height: 48px; padding: 0 var(--s-lg); border-radius: var(--r-md);
+    font-family: var(--font); font-size: 16px; font-weight: 700; border: 0; cursor: pointer;
+    transition: transform var(--m-fast), opacity var(--m-fast);
+  }
+  .btn:active { transform: scale(.98); }
+  .btn--primary { background: var(--primary); color: var(--on-primary); }
+  .btn--primary.is-pressed { background: var(--primary-pressed); }
+  .btn--secondary { background: var(--surface-muted); color: var(--text); }
+  .btn--ghost { background: transparent; color: var(--primary); }
+  .btn--danger { background: var(--foul); color: var(--on-foul); }
+  .btn--lg { min-height: 56px; font-size: 18px; padding: 0 var(--s-xl); }
+  .btn--xl { min-height: 64px; font-size: 20px; border-radius: var(--r-lg); width: 100%; }
+  .btn.is-disabled { opacity: .45; cursor: default; }
+  .btn--block { width: 100%; }
+
+  /* RN: IconButton */
+  .icon-btn {
+    width: 44px; height: 44px; border-radius: var(--r-full);
+    display: inline-flex; align-items: center; justify-content: center;
+    background: var(--surface-muted); color: var(--text); border: 0; cursor: pointer; font-size: 18px;
+  }
+
+  /* RN: Input */
+  .input {
+    width: 100%; min-height: 48px; padding: 0 var(--s-md);
+    background: var(--surface); border: 1.5px solid var(--border); border-radius: var(--r-md);
+    color: var(--text); font-size: 16px; font-family: var(--font);
+  }
+  .input.is-focused { border-color: var(--primary); box-shadow: 0 0 0 3px var(--primary-soft); }
+  .input.is-error { border-color: var(--foul); }
+  .input::placeholder { color: var(--text-muted); }
+  .field-error { color: var(--foul); font-size: 12px; margin-top: 4px; }
+
+  /* RN: Stepper */
+  .stepper { display: inline-flex; align-items: center; gap: var(--s-sm); }
+  .stepper button {
+    width: 40px; height: 40px; border-radius: var(--r-full); border: 1.5px solid var(--border);
+    background: var(--surface); color: var(--text); font-size: 20px; font-weight: 700; cursor: pointer;
+    display: inline-flex; align-items: center; justify-content: center;
+  }
+  .stepper .val { min-width: 48px; text-align: center; font-size: 18px; font-weight: 700; }
+
+  /* RN: Slider (presentational) */
+  .slider { width: 220px; }
+  .slider .track { height: 6px; border-radius: var(--r-full); background: var(--surface-muted); position: relative; }
+  .slider .fill { position: absolute; left: 0; top: 0; bottom: 0; border-radius: var(--r-full); background: var(--primary); }
+  .slider .thumb { position: absolute; top: 50%; width: 24px; height: 24px; border-radius: var(--r-full);
+    background: var(--bg); border: 2px solid var(--primary); transform: translate(-50%,-50%); box-shadow: var(--shadow-sm); }
+
+  /* RN: Switch */
+  .switch { width: 52px; height: 32px; border-radius: var(--r-full); background: var(--surface-muted); position: relative; cursor: pointer; transition: background var(--m-base); }
+  .switch .knob { position: absolute; top: 3px; left: 3px; width: 26px; height: 26px; border-radius: var(--r-full); background: var(--bg); box-shadow: var(--shadow-sm); transition: left var(--m-base); }
+  .switch.on { background: var(--primary); }
+  .switch.on .knob { left: 23px; }
+
+  /* RN: SegmentedControl */
+  .segmented { display: inline-flex; background: var(--surface-muted); padding: 4px; border-radius: var(--r-md); gap: 4px; }
+  .segmented .seg { padding: 10px 18px; border-radius: var(--r-sm); font-weight: 600; font-size: 14px; color: var(--text-muted); cursor: pointer; }
+  .segmented .seg.active { background: var(--bg); color: var(--text); box-shadow: var(--shadow-sm); }
+
+  /* RN: Chip / Tag */
+  .chip { display: inline-flex; align-items: center; gap: 6px; padding: 6px 12px; border-radius: var(--r-full); font-size: 13px; font-weight: 600; }
+  .chip--neutral { background: var(--surface-muted); color: var(--text-muted); }
+  .chip--easy { background: var(--correct-soft); color: var(--correct); }
+  .chip--medium { background: var(--skip-soft); color: var(--skip-pressed); }
+  .chip--hard { background: var(--foul-soft); color: var(--foul); }
+  .chip--correct { background: var(--correct-soft); color: var(--correct); }
+  .chip--skip { background: var(--skip-soft); color: var(--skip-pressed); }
+  .chip--foul { background: var(--foul-soft); color: var(--foul); }
+
+  /* RN: Badge / score pill */
+  .badge { display: inline-flex; align-items: center; gap: 6px; padding: 6px 14px; border-radius: var(--r-full); font-weight: 800; font-size: 15px; background: var(--surface-muted); color: var(--text); }
+
+  /* RN: TimerDisplay (ring) — RN port via react-native-svg <Circle> or Reanimated arc */
+  .timer-ring { position: relative; width: 132px; height: 132px; border-radius: var(--r-full); display: flex; align-items: center; justify-content: center;
+    background: conic-gradient(var(--primary) calc(var(--p,70) * 1%), var(--surface-muted) 0); }
+  .timer-ring::before { content: ""; position: absolute; width: 108px; height: 108px; border-radius: var(--r-full); background: var(--bg); }
+  .timer-ring .num { position: relative; }
+  .timer-ring.danger { background: conic-gradient(var(--foul) calc(var(--p,15) * 1%), var(--foul-soft) 0); }
+  .timer-ring.danger .num { color: var(--foul); }
+
+  /* RN: WordCard */
+  .word-card { width: 100%; background: var(--bg); border: 1px solid var(--border); border-radius: var(--r-xl); box-shadow: var(--shadow-md);
+    padding: var(--s-xl) var(--s-lg); display: flex; flex-direction: column; align-items: center; gap: var(--s-md); }
+  .word-card .word { text-align: center; }
+  .taboo-list { display: flex; flex-direction: column; gap: 6px; align-items: center; padding-top: var(--s-sm); border-top: 1px dashed var(--border); width: 100%; }
+  .taboo-list .label { font-size: 11px; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; color: var(--foul); }
+  .taboo-word { color: var(--text-muted); text-decoration: line-through; font-size: 16px; }
+
+  /* RN: ActionButtonBar — Correct / Skip / Foul. Color + ICON (never color alone). */
+  .action-bar { display: flex; flex-direction: row; gap: var(--s-md); width: 100%; }
+  .action {
+    flex: 1; min-height: 88px; border: 0; border-radius: var(--r-lg); cursor: pointer;
+    display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px;
+    font-weight: 800; font-size: 17px; color: #fff; box-shadow: var(--shadow-sm);
+  }
+  .action .ico { font-size: 26px; line-height: 1; }
+  .action--correct { background: var(--correct); }
+  .action--skip { background: var(--skip); color: var(--on-skip); }
+  .action--foul { flex: 0 0 88px; background: var(--foul-soft); color: var(--foul); }
+
+  /* RN: TeamRow (Setup) */
+  .team-row { display: flex; flex-direction: row; align-items: center; gap: var(--s-sm); }
+  .team-dot { width: 28px; height: 28px; border-radius: var(--r-full); flex: 0 0 auto; box-shadow: inset 0 0 0 2px rgba(255,255,255,.4); }
+
+  /* RN: StatTile */
+  .stat-tile { flex: 1; background: var(--surface); border: 1px solid var(--border); border-radius: var(--r-lg); padding: var(--s-md); text-align: center; }
+  .stat-tile .n { font-size: 30px; font-weight: 800; }
+  .stat-tile .l { font-size: 12px; color: var(--text-muted); margin-top: 2px; }
+
+  /* RN: Scoreboard row */
+  .score-row { display: flex; flex-direction: row; align-items: center; gap: var(--s-md); padding: var(--s-md); border-radius: var(--r-md); background: var(--surface); }
+  .score-row.leader { background: var(--primary-soft); }
+  .rank { width: 28px; height: 28px; border-radius: var(--r-full); display: flex; align-items: center; justify-content: center; font-weight: 800; font-size: 14px; background: var(--surface-muted); }
+  .score-row .name { flex: 1; font-weight: 700; }
+  .score-row .pts { font-weight: 800; font-size: 18px; }
+
+  /* RN: AlertDialog + Overlay */
+  .overlay { position: relative; background: rgba(8,9,12,.55); border-radius: var(--r-xl); padding: var(--s-xl); display: flex; align-items: center; justify-content: center; }
+  .dialog { background: var(--bg); border-radius: var(--r-lg); padding: var(--s-lg); width: 300px; box-shadow: var(--shadow-lg); display: flex; flex-direction: column; gap: var(--s-md); }
+  .paused-card { background: var(--bg); border-radius: var(--r-lg); padding: var(--s-xl); display: flex; flex-direction: column; align-items: center; gap: var(--s-md); box-shadow: var(--shadow-lg); }
+
+  /* RN: Toast (Undo) */
+  .toast { display: inline-flex; align-items: center; gap: var(--s-md); background: var(--text); color: var(--bg); padding: 12px 16px; border-radius: var(--r-md); box-shadow: var(--shadow-md); font-size: 14px; font-weight: 600; }
+  .toast .undo { color: var(--primary); font-weight: 800; cursor: pointer; }
+
+  /* ============================================================
+     PHONE FRAME (gallery presentation device)
+     ============================================================ */
+  .phones { display: flex; flex-direction: row; flex-wrap: wrap; gap: var(--s-xl); }
+  .phone-wrap { display: flex; flex-direction: column; align-items: center; gap: var(--s-sm); }
+  .phone-wrap .caption { font-size: 13px; font-weight: 700; color: var(--text); text-align: center; max-width: 360px; }
+  .phone-wrap .caption .muted { font-weight: 400; }
+  .phone {
+    width: 360px; height: 740px; background: #0a0a0c; border-radius: 46px; padding: 10px;
+    box-shadow: var(--shadow-lg); flex: 0 0 auto;
+  }
+  .screen {
+    width: 100%; height: 100%; background: var(--bg); border-radius: 38px; overflow: hidden;
+    display: flex; flex-direction: column; position: relative;
+  }
+  .statusbar { height: 30px; flex: 0 0 auto; display: flex; align-items: center; justify-content: space-between; padding: 0 22px; font-size: 12px; font-weight: 700; }
+  .notch { position: absolute; top: 8px; left: 50%; transform: translateX(-50%); width: 110px; height: 22px; background: #0a0a0c; border-radius: var(--r-full); z-index: 5; }
+  .screen-body { flex: 1; overflow: hidden; display: flex; flex-direction: column; padding: var(--s-md) var(--s-md) 0; }
+  .screen-scroll { flex: 1; overflow-y: auto; display: flex; flex-direction: column; gap: var(--s-md); padding-bottom: var(--s-md); }
+  .sticky-footer { padding: var(--s-md); border-top: 1px solid var(--border); background: var(--bg); }
+  .nav-title { font-size: 13px; font-weight: 700; letter-spacing: .04em; text-transform: uppercase; color: var(--text-muted); }
+  .form-section-title { font-size: 13px; font-weight: 800; letter-spacing: .05em; text-transform: uppercase; color: var(--text-muted); margin-bottom: var(--s-xs); }
+  .between { display: flex; flex-direction: row; align-items: center; justify-content: space-between; }
+  .center-col { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: var(--s-lg); padding: var(--s-lg); }
+  .confetti { font-size: 40px; letter-spacing: 6px; }
+
+  /* ============================================================
+     LANGUAGE ONBOARDING  →  src/features/language/components
+     New components for app-language / word-language selection.
+     Built from the same tokens; named after their future RN components.
+     ============================================================ */
+
+  /* RN: LanguageRow — extends .score-row. Flag + endonym (+ English name)
+     + trailing affordance (radio check / download control). */
+  .lang-flag { font-size: 26px; line-height: 1; flex: 0 0 auto; width: 30px; text-align: center; }
+  .lang-name { flex: 1; font-weight: 700; font-size: 16px; }
+  .lang-name .sub { font-size: 12px; line-height: 16px; font-weight: 400; color: var(--text-muted); margin-top: 1px; }
+  .score-row.is-selected { background: var(--primary-soft); box-shadow: inset 0 0 0 1.5px var(--primary); }
+
+  /* RN: RadioCheck — the selected-state indicator on a selectable row */
+  .radio {
+    width: 24px; height: 24px; border-radius: var(--r-full); flex: 0 0 auto;
+    border: 2px solid var(--border); background: var(--bg);
+    display: inline-flex; align-items: center; justify-content: center;
+    color: transparent; font-size: 14px; font-weight: 800;
+  }
+  .radio.is-on { background: var(--primary); border-color: var(--primary); color: var(--on-primary); }
+
+  /* RN: DownloadControl — three offline states share one slot.
+     1) not-downloaded → .dl-btn (Download + size)
+     2) downloading    → .dl-progress (ring + %)
+     3) downloaded     → .badge--offline ("Available offline" check) */
+  .dl-btn {
+    display: inline-flex; align-items: center; gap: 6px; flex: 0 0 auto;
+    min-height: 36px; padding: 0 14px; border-radius: var(--r-full);
+    background: var(--primary-soft); color: var(--primary);
+    font-size: 13px; font-weight: 700; border: 0; cursor: pointer; white-space: nowrap;
+  }
+  .dl-size { font-size: 11px; color: var(--text-muted); font-weight: 600; margin-top: 3px; text-align: right; }
+
+  /* downloading: small determinate ring (conic-gradient, same trick as TimerDisplay) */
+  .dl-progress { display: inline-flex; align-items: center; gap: var(--s-sm); flex: 0 0 auto; }
+  .dl-ring {
+    position: relative; width: 32px; height: 32px; border-radius: var(--r-full);
+    background: conic-gradient(var(--primary) calc(var(--p,40) * 1%), var(--surface-muted) 0);
+    display: flex; align-items: center; justify-content: center; flex: 0 0 auto;
+  }
+  .dl-ring::before { content: ""; position: absolute; width: 22px; height: 22px; border-radius: var(--r-full); background: var(--bg); }
+  .dl-ring .pct { position: relative; font-size: 9px; font-weight: 800; color: var(--primary); }
+
+  /* downloaded: an "Available offline" affirmative badge (check + label) */
+  .badge--offline {
+    display: inline-flex; align-items: center; gap: 6px; flex: 0 0 auto;
+    padding: 6px 12px; border-radius: var(--r-full);
+    background: var(--correct-soft); color: var(--correct);
+    font-size: 12px; font-weight: 700; white-space: nowrap;
+  }
+
+  /* RN: NoteCallout — soft helper note (e.g. "download languages for offline play") */
+  .note {
+    display: flex; flex-direction: row; gap: var(--s-sm); align-items: flex-start;
+    background: var(--surface); border: 1px solid var(--border); border-radius: var(--r-md);
+    padding: var(--s-md);
+  }
+  .note .ico { font-size: 18px; line-height: 1.2; flex: 0 0 auto; }
+  .note .txt { font-size: 13px; line-height: 18px; color: var(--text-muted); }
+
+  /* RN: SettingsRow — a tappable "Change language" row with current value + chevron */
+  .settings-row {
+    display: flex; flex-direction: row; align-items: center; gap: var(--s-md);
+    padding: var(--s-md); border-radius: var(--r-md); background: var(--surface);
+    border: 1px solid var(--border); cursor: pointer;
+  }
+  .settings-row .ico { font-size: 20px; flex: 0 0 auto; }
+  .settings-row .label { flex: 1; font-weight: 700; font-size: 16px; }
+  .settings-row .value { color: var(--text-muted); font-weight: 600; font-size: 15px; }
+  .settings-row .chev { color: var(--text-muted); font-size: 18px; flex: 0 0 auto; }
+
+  /* RN: BottomSheet — slides up over a dimmed screen. Backdrop = .sheet-overlay,
+     justify to flex-end so the sheet hugs the bottom edge inside the frame. */
+  .sheet-overlay { position: absolute; inset: 0; background: rgba(8,9,12,.55); display: flex; flex-direction: column; justify-content: flex-end; }
+  .sheet {
+    background: var(--bg); border-top-left-radius: var(--r-xl); border-top-right-radius: var(--r-xl);
+    box-shadow: var(--shadow-lg); display: flex; flex-direction: column;
+    max-height: 86%; padding: var(--s-sm) 0 0;
+  }
+  .sheet-grabber { width: 40px; height: 5px; border-radius: var(--r-full); background: var(--border); align-self: center; margin: var(--s-xs) 0 var(--s-sm); flex: 0 0 auto; }
+  .sheet-head { display: flex; flex-direction: row; align-items: center; justify-content: space-between; padding: 0 var(--s-md) var(--s-sm); flex: 0 0 auto; }
+  .sheet-body { overflow-y: auto; display: flex; flex-direction: column; gap: var(--s-md); padding: 0 var(--s-md) var(--s-sm); }
+  .sheet-footer { padding: var(--s-md); border-top: 1px solid var(--border); background: var(--bg); flex: 0 0 auto; }
+
+  /* RN: SecondaryPicker — the optional bilingual secondary-language slot.
+     Visually distinct from primary: dashed "add" affordance when empty,
+     dotted accent ring when chosen, so primary vs optional reads at a glance. */
+  .secondary-add {
+    display: flex; flex-direction: row; align-items: center; gap: var(--s-sm);
+    min-height: 52px; padding: var(--s-md); border-radius: var(--r-md);
+    border: 1.5px dashed var(--border); background: transparent;
+    color: var(--text-muted); font-weight: 700; font-size: 15px; width: 100%; cursor: pointer;
+  }
+  .secondary-add .plus { font-size: 20px; color: var(--primary); }
+  .score-row.is-secondary { background: var(--surface); box-shadow: inset 0 0 0 1.5px var(--primary); border: 1px dashed transparent; }
+  .tag-role { font-size: 10px; font-weight: 800; letter-spacing: .06em; text-transform: uppercase; padding: 3px 8px; border-radius: var(--r-full); flex: 0 0 auto; }
+  .tag-role--primary { background: var(--primary); color: var(--on-primary); }
+  .tag-role--secondary { background: var(--primary-soft); color: var(--primary); box-shadow: inset 0 0 0 1px var(--primary); }
+</style>
+</head>
+<body>
+  <div class="topbar">
+    <div>
+      <h1>Alias — Design System</h1>
+      <div class="sub">Refined-playful · token-driven · RN-faithful proxy</div>
+    </div>
+    <div class="spacer"></div>
+    <div class="nav">
+      <button data-panel="tokens" class="active">Tokens</button>
+      <button data-panel="components">Components</button>
+      <button data-panel="screens">Screens</button>
+    </div>
+    <a class="toggle" href="arcade.html" style="text-decoration:none">Arcade</a>
+    <a class="toggle" href="vivid.html" style="text-decoration:none">Vivid</a>
+    <button class="toggle" id="themeToggle">◐ Dark</button>
+  </div>
+
+  <main>
+    <!-- ============================ TOKENS ============================ -->
+    <section class="panel active" id="tokens">
+      <div class="section-title">Color</div>
+      <p class="section-note">Lifted verbatim into <code class="tok">src/theme/colors.ts</code>. Toggle dark mode (top-right) to verify both schemes. Gameplay actions always pair color with an icon for colorblind safety.</p>
+
+      <div class="group">
+        <h3>Neutrals & surfaces</h3>
+        <div class="row">
+          <div class="swatch"><div class="chip" style="background:var(--bg)"></div><div class="name">background</div></div>
+          <div class="swatch"><div class="chip" style="background:var(--surface)"></div><div class="name">surface</div></div>
+          <div class="swatch"><div class="chip" style="background:var(--surface-muted)"></div><div class="name">surfaceMuted</div></div>
+          <div class="swatch"><div class="chip" style="background:var(--border)"></div><div class="name">border</div></div>
+          <div class="swatch"><div class="chip" style="background:var(--text)"></div><div class="name">text</div></div>
+          <div class="swatch"><div class="chip" style="background:var(--text-muted)"></div><div class="name">textMuted</div></div>
+        </div>
+      </div>
+
+      <div class="group">
+        <h3>Brand & gameplay semantics</h3>
+        <div class="row">
+          <div class="swatch"><div class="chip" style="background:var(--primary)"></div><div class="name">primary</div></div>
+          <div class="swatch"><div class="chip" style="background:var(--primary-pressed)"></div><div class="name">primaryPressed</div></div>
+          <div class="swatch"><div class="chip" style="background:var(--correct)"></div><div class="name">correct</div></div>
+          <div class="swatch"><div class="chip" style="background:var(--skip)"></div><div class="name">skip</div></div>
+          <div class="swatch"><div class="chip" style="background:var(--foul)"></div><div class="name">foul</div></div>
+          <div class="swatch"><div class="chip" style="background:var(--golden)"></div><div class="name">golden</div></div>
+        </div>
+      </div>
+
+      <div class="group">
+        <h3>Team palette (1–8)</h3>
+        <div class="desc">Assigned in Setup. Vibrant and mutually distinguishable; used for hero headings, dots, and scoreboard accents.</div>
+        <div class="row">
+          <div class="swatch"><div class="chip" style="background:var(--team-1)"></div><div class="name">team 1</div></div>
+          <div class="swatch"><div class="chip" style="background:var(--team-2)"></div><div class="name">team 2</div></div>
+          <div class="swatch"><div class="chip" style="background:var(--team-3)"></div><div class="name">team 3</div></div>
+          <div class="swatch"><div class="chip" style="background:var(--team-4)"></div><div class="name">team 4</div></div>
+          <div class="swatch"><div class="chip" style="background:var(--team-5)"></div><div class="name">team 5</div></div>
+          <div class="swatch"><div class="chip" style="background:var(--team-6)"></div><div class="name">team 6</div></div>
+          <div class="swatch"><div class="chip" style="background:var(--team-7)"></div><div class="name">team 7</div></div>
+          <div class="swatch"><div class="chip" style="background:var(--team-8)"></div><div class="name">team 8</div></div>
+        </div>
+      </div>
+
+      <div class="section-title">Typography</div>
+      <p class="section-note">Maps to <code class="tok">Text</code> variants. Adds <b>display</b> (word card) and <b>timer</b> (tabular countdown) on top of the existing scale.</p>
+      <div class="group stack" style="gap:var(--s-md)">
+        <div class="t-display">Display 44 <span class="muted t-caption">— word card</span></div>
+        <div class="t-timer">0:45 <span class="muted t-caption">— timer (tabular)</span></div>
+        <div class="t-title">Title 28 <span class="muted t-caption">— screen titles</span></div>
+        <div class="t-heading">Heading 20 <span class="muted t-caption">— section heads</span></div>
+        <div class="t-body">Body 16 — the workhorse paragraph + control text.</div>
+        <div class="t-label">Label 14 — buttons & form labels</div>
+        <div class="t-caption">Caption 12 — hints & metadata</div>
+      </div>
+
+      <div class="section-title">Spacing · Radii · Elevation</div>
+      <div class="group">
+        <h3>Spacing scale (pt)</h3>
+        <div class="row" style="align-items:flex-end">
+          <div class="stack" style="align-items:center"><div class="space-demo" style="width:4px;height:32px"></div><div class="pill-label">xs · 4</div></div>
+          <div class="stack" style="align-items:center"><div class="space-demo" style="width:8px;height:32px"></div><div class="pill-label">sm · 8</div></div>
+          <div class="stack" style="align-items:center"><div class="space-demo" style="width:16px;height:32px"></div><div class="pill-label">md · 16</div></div>
+          <div class="stack" style="align-items:center"><div class="space-demo" style="width:24px;height:32px"></div><div class="pill-label">lg · 24</div></div>
+          <div class="stack" style="align-items:center"><div class="space-demo" style="width:32px;height:32px"></div><div class="pill-label">xl · 32</div></div>
+          <div class="stack" style="align-items:center"><div class="space-demo" style="width:48px;height:32px"></div><div class="pill-label">xxl · 48</div></div>
+        </div>
+      </div>
+      <div class="row">
+        <div class="group" style="flex:1; min-width:280px">
+          <h3>Radii</h3>
+          <div class="row">
+            <div class="stack" style="align-items:center"><div class="radius-demo" style="border-radius:var(--r-sm)"></div><div class="pill-label">sm · 8</div></div>
+            <div class="stack" style="align-items:center"><div class="radius-demo" style="border-radius:var(--r-md)"></div><div class="pill-label">md · 12</div></div>
+            <div class="stack" style="align-items:center"><div class="radius-demo" style="border-radius:var(--r-lg)"></div><div class="pill-label">lg · 16</div></div>
+            <div class="stack" style="align-items:center"><div class="radius-demo" style="border-radius:var(--r-xl)"></div><div class="pill-label">xl · 24</div></div>
+          </div>
+        </div>
+        <div class="group" style="flex:1; min-width:280px">
+          <h3>Elevation</h3>
+          <div class="row">
+            <div class="stack" style="align-items:center"><div class="radius-demo" style="background:var(--bg);border-color:var(--border);box-shadow:var(--shadow-sm)"></div><div class="pill-label">sm</div></div>
+            <div class="stack" style="align-items:center"><div class="radius-demo" style="background:var(--bg);border-color:var(--border);box-shadow:var(--shadow-md)"></div><div class="pill-label">md</div></div>
+            <div class="stack" style="align-items:center"><div class="radius-demo" style="background:var(--bg);border-color:var(--border);box-shadow:var(--shadow-lg)"></div><div class="pill-label">lg</div></div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ========================== COMPONENTS ========================== -->
+    <section class="panel" id="components">
+      <div class="section-title">Primitives → <code class="tok">src/components/ui</code></div>
+      <p class="section-note">Each shown in all states. States are where RN ports break, so they're explicit here (default / pressed / disabled / focused / error / danger).</p>
+
+      <div class="group">
+        <h3>Button</h3>
+        <div class="desc">Variants × sizes × states. Pressed = darker bg + 0.98 scale; disabled = 0.45 opacity.</div>
+        <div class="row" style="align-items:center">
+          <button class="btn btn--primary">Primary</button>
+          <button class="btn btn--primary is-pressed">Pressed</button>
+          <button class="btn btn--primary is-disabled">Disabled</button>
+          <button class="btn btn--secondary">Secondary</button>
+          <button class="btn btn--ghost">Ghost</button>
+          <button class="btn btn--danger">Danger</button>
+        </div>
+        <div class="row" style="align-items:center; margin-top:var(--s-md)">
+          <button class="btn btn--primary btn--lg">Large</button>
+          <button class="btn btn--primary btn--xl" style="max-width:240px">XL · full width</button>
+        </div>
+      </div>
+
+      <div class="row">
+        <div class="group" style="flex:1; min-width:300px">
+          <h3>Input</h3>
+          <div class="stack">
+            <input class="input" placeholder="Team name" value="Red Rockets" />
+            <input class="input is-focused" placeholder="Focused" value="Typing…" />
+            <div>
+              <input class="input is-error" value="" placeholder="Team name" />
+              <div class="field-error">Team name is required</div>
+            </div>
+          </div>
+        </div>
+        <div class="group" style="flex:1; min-width:300px">
+          <h3>Stepper · Slider · Switch · IconButton</h3>
+          <div class="stack" style="gap:var(--s-lg)">
+            <div class="between"><span class="t-label">Round count</span>
+              <div class="stepper"><button>−</button><span class="val">3</span><button>+</button></div></div>
+            <div class="between"><span class="t-label">Duration</span>
+              <div class="slider"><div class="track"><div class="fill" style="width:35%"></div><div class="thumb" style="left:35%"></div></div></div></div>
+            <div class="between"><span class="t-label">No negative scores</span>
+              <div class="switch on"><div class="knob"></div></div></div>
+            <div class="between"><span class="t-label">Sound</span>
+              <div class="switch"><div class="knob"></div></div></div>
+            <div class="between"><span class="t-label">Icon buttons</span>
+              <div class="row" style="gap:var(--s-sm)"><button class="icon-btn">✕</button><button class="icon-btn">↺</button><button class="icon-btn">＋</button></div></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="row">
+        <div class="group" style="flex:1; min-width:300px">
+          <h3>SegmentedControl</h3>
+          <div class="stack">
+            <div class="segmented"><div class="seg active">Time Score</div><div class="seg">Max Score</div></div>
+            <div class="segmented"><div class="seg active">Describe</div><div class="seg">Taboo</div><div class="seg">One word</div></div>
+          </div>
+        </div>
+        <div class="group" style="flex:1; min-width:300px">
+          <h3>Chip / Tag & Badge</h3>
+          <div class="row" style="margin-bottom:var(--s-md)">
+            <span class="chip chip--easy">● Easy</span>
+            <span class="chip chip--medium">● Medium</span>
+            <span class="chip chip--hard">● Hard</span>
+            <span class="chip chip--neutral">Kids</span>
+          </div>
+          <div class="row">
+            <span class="chip chip--correct">✓ Correct</span>
+            <span class="chip chip--skip">↪ Skip</span>
+            <span class="chip chip--foul">⚑ Foul</span>
+            <span class="badge">Score 12</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="section-title">Game composites → <code class="tok">src/features/game/components</code></div>
+
+      <div class="row">
+        <div class="group" style="flex:0 0 auto">
+          <h3>TimerDisplay</h3>
+          <div class="row" style="align-items:center">
+            <div class="stack" style="align-items:center"><div class="timer-ring" style="--p:70"><span class="num t-timer" style="font-size:30px">0:42</span></div><div class="pill-label">running</div></div>
+            <div class="stack" style="align-items:center"><div class="timer-ring danger" style="--p:18"><span class="num t-timer" style="font-size:30px">0:08</span></div><div class="pill-label">last 10s</div></div>
+          </div>
+        </div>
+        <div class="group" style="flex:1; min-width:280px">
+          <h3>ActionButtonBar</h3>
+          <div class="desc">Correct / Skip / Foul — color <b>and</b> icon. Foul is the narrow optional button.</div>
+          <div class="action-bar">
+            <button class="action action--correct"><span class="ico">✓</span>Correct</button>
+            <button class="action action--skip"><span class="ico">↪</span>Skip</button>
+            <button class="action action--foul"><span class="ico">⚑</span></button>
+          </div>
+        </div>
+      </div>
+
+      <div class="row">
+        <div class="group" style="flex:1; min-width:280px">
+          <h3>WordCard — default</h3>
+          <div class="word-card"><div class="word t-display">Elephant</div></div>
+        </div>
+        <div class="group" style="flex:1; min-width:280px">
+          <h3>WordCard — Taboo</h3>
+          <div class="word-card">
+            <div class="word t-display">Coffee</div>
+            <div class="taboo-list">
+              <div class="label">Don't say</div>
+              <span class="taboo-word">drink</span>
+              <span class="taboo-word">caffeine</span>
+              <span class="taboo-word">morning</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="row">
+        <div class="group" style="flex:1; min-width:300px">
+          <h3>TeamRow · StatTile · Scoreboard</h3>
+          <div class="stack" style="gap:var(--s-md)">
+            <div class="team-row"><div class="team-dot" style="background:var(--team-1)"></div><input class="input" value="Red Rockets" /><button class="icon-btn">✕</button></div>
+            <div class="row" style="gap:var(--s-sm)">
+              <div class="stat-tile"><div class="n" style="color:var(--correct)">7</div><div class="l">Correct</div></div>
+              <div class="stat-tile"><div class="n" style="color:var(--skip-pressed)">2</div><div class="l">Skipped</div></div>
+              <div class="stat-tile"><div class="n" style="color:var(--foul)">1</div><div class="l">Fouls</div></div>
+            </div>
+            <div class="score-row leader"><div class="rank">1</div><div class="team-dot" style="background:var(--team-1)"></div><div class="name">Red Rockets</div><div class="pts">12</div></div>
+            <div class="score-row"><div class="rank">2</div><div class="team-dot" style="background:var(--team-2)"></div><div class="name">Blue Bolts</div><div class="pts">9</div></div>
+          </div>
+        </div>
+        <div class="group" style="flex:1; min-width:300px">
+          <h3>Overlays · Dialog · Toast</h3>
+          <div class="stack" style="gap:var(--s-md)">
+            <div class="overlay"><div class="paused-card"><div class="t-heading">Paused</div><div class="muted t-caption">Tap to resume — timer won't drift.</div><button class="btn btn--primary">Resume round</button></div></div>
+            <div class="overlay"><div class="dialog"><div class="t-heading">Leave the round?</div><div class="muted t-body">This round's progress will be lost.</div><div class="row" style="justify-content:flex-end"><button class="btn btn--ghost">Cancel</button><button class="btn btn--danger">Leave</button></div></div></div>
+            <div class="toast">Marked “Elephant” correct <span class="undo">UNDO</span></div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ============================ SCREENS ============================ -->
+    <section class="panel" id="screens">
+      <div class="section-title">Core screens</div>
+      <p class="section-note">The five-screen loop assembled from the components above, in 360×740 frames. Setup → Game Intro → Game → Round Result → Winner.</p>
+
+      <div class="phones">
+
+        <!-- ===== HOME ===== -->
+        <div class="phone-wrap">
+          <div class="phone"><div class="screen"><div class="notch"></div>
+            <div class="statusbar"><span>9:41</span><span>▮▮▮ 100%</span></div>
+            <div class="screen-body">
+              <div class="between"><span></span><button class="icon-btn" title="Sign in">👤</button></div>
+              <div class="center-col" style="padding-top:0">
+                <div class="t-display" style="font-size:52px; color:var(--primary)">Alias</div>
+                <div class="t-body muted" style="margin-top:-10px">the party word game</div>
+                <button class="btn btn--primary btn--xl" style="max-width:240px">▶ Play</button>
+                <div class="row" style="width:100%; max-width:280px; gap:var(--s-sm); justify-content:center">
+                  <button class="btn btn--secondary" style="flex:1">📚 Word Packs</button>
+                  <button class="btn btn--secondary" style="flex:1">✨ Create</button>
+                </div>
+                <div class="row" style="width:100%; max-width:280px; gap:var(--s-sm); justify-content:center">
+                  <button class="btn btn--secondary" style="flex:1">🌐 Discover</button>
+                  <button class="btn btn--secondary" style="flex:1">❔ How to play</button>
+                </div>
+                <button class="btn btn--secondary btn--block" style="max-width:280px">⚙ Settings</button>
+              </div>
+            </div>
+          </div></div>
+          <div class="caption">0 · Home</div>
+        </div>
+
+        <!-- ===== SETUP ===== -->
+        <div class="phone-wrap">
+          <div class="phone"><div class="screen"><div class="notch"></div>
+            <div class="statusbar"><span>9:41</span><span>▮▮▮ 100%</span></div>
+            <div class="screen-body">
+              <div class="between" style="margin-bottom:var(--s-sm)"><span class="t-title">New Game</span><button class="icon-btn">⚙</button></div>
+              <div class="screen-scroll">
+                <div>
+                  <div class="form-section-title">Teams</div>
+                  <div class="stack" style="gap:var(--s-sm)">
+                    <div class="team-row"><div class="team-dot" style="background:var(--team-1)"></div><input class="input" value="Red Rockets" /><button class="icon-btn">✕</button></div>
+                    <div class="team-row"><div class="team-dot" style="background:var(--team-2)"></div><input class="input" value="Blue Bolts" /><button class="icon-btn">✕</button></div>
+                    <button class="btn btn--secondary btn--block">＋ Add team</button>
+                  </div>
+                </div>
+                <div>
+                  <div class="form-section-title">Game mode</div>
+                  <div class="segmented" style="display:flex"><div class="seg active" style="flex:1; text-align:center">Time Score</div><div class="seg" style="flex:1; text-align:center">Max Score</div></div>
+                  <div class="t-caption muted" style="margin-top:6px">Each team plays a set number of rounds.</div>
+                </div>
+                <div>
+                  <div class="form-section-title">Timer & scoring</div>
+                  <div class="stack" style="gap:var(--s-md)">
+                    <div class="between"><span class="t-label">Round duration</span><span class="badge">60s</span></div>
+                    <div class="slider" style="width:100%"><div class="track"><div class="fill" style="width:30%"></div><div class="thumb" style="left:30%"></div></div></div>
+                    <div class="between"><span class="t-label">Correct</span><div class="stepper"><button>−</button><span class="val">+1</span><button>+</button></div></div>
+                    <div class="between"><span class="t-label">Skip</span><div class="stepper"><button>−</button><span class="val">0</span><button>+</button></div></div>
+                  </div>
+                </div>
+                <div>
+                  <div class="form-section-title">Finish condition</div>
+                  <div class="between"><span class="t-label">Rounds per team</span><div class="stepper"><button>−</button><span class="val">3</span><button>+</button></div></div>
+                </div>
+              </div>
+            </div>
+            <div class="sticky-footer"><button class="btn btn--primary btn--xl">Start Game</button></div>
+          </div></div>
+          <div class="caption">1 · Setup</div>
+        </div>
+
+        <!-- ===== GAME INTRO ===== -->
+        <div class="phone-wrap">
+          <div class="phone"><div class="screen"><div class="notch"></div>
+            <div class="statusbar"><span>9:41</span><span>▮▮▮ 100%</span></div>
+            <div class="screen-body" style="padding-bottom:var(--s-md)">
+              <div class="center-col">
+                <div class="chip chip--neutral">Pass the phone to</div>
+                <div class="t-display" style="color:var(--team-1); text-align:center; font-size:40px">Red Rockets</div>
+                <div class="badge" style="font-size:18px; padding:10px 20px">Score 12</div>
+                <div class="t-heading muted">Round 2 of 3</div>
+                <div class="chip chip--neutral">🗣 Describe — no part of the word</div>
+              </div>
+              <button class="btn btn--primary btn--xl" style="background:var(--team-1)">Start Round</button>
+              <div style="height:var(--s-md)"></div>
+            </div>
+          </div></div>
+          <div class="caption">2 · Game Intro (hand-off)</div>
+        </div>
+
+        <!-- ===== GAME ===== -->
+        <div class="phone-wrap">
+          <div class="phone"><div class="screen"><div class="notch"></div>
+            <div class="statusbar"><span>9:41</span><span>▮▮▮ 100%</span></div>
+            <div class="screen-body" style="padding-bottom:var(--s-md)">
+              <div class="between">
+                <span class="chip" style="background:var(--team-1); color:#fff">Red Rockets</span>
+                <span class="badge"><span class="muted t-caption">round</span> +5 · <span style="color:var(--text)">17</span></span>
+              </div>
+              <div style="display:flex; justify-content:center; margin-top:var(--s-md)">
+                <div class="timer-ring" style="--p:64"><span class="num t-timer" style="font-size:34px">0:38</span></div>
+              </div>
+              <div class="center-col" style="padding:var(--s-md) 0">
+                <div class="word-card"><div class="word t-display">Lighthouse</div></div>
+                <div class="toast" style="align-self:center">Marked “Anchor” correct <span class="undo">UNDO</span></div>
+              </div>
+              <div class="action-bar" style="margin-bottom:var(--s-md)">
+                <button class="action action--correct"><span class="ico">✓</span>Correct</button>
+                <button class="action action--skip"><span class="ico">↪</span>Skip</button>
+                <button class="action action--foul"><span class="ico">⚑</span></button>
+              </div>
+            </div>
+          </div></div>
+          <div class="caption">3 · Game (hot path)</div>
+        </div>
+
+        <!-- ===== ROUND RESULT ===== -->
+        <div class="phone-wrap">
+          <div class="phone"><div class="screen"><div class="notch"></div>
+            <div class="statusbar"><span>9:41</span><span>▮▮▮ 100%</span></div>
+            <div class="screen-body">
+              <div class="stack" style="align-items:center; margin-bottom:var(--s-md)">
+                <span class="chip" style="background:var(--team-1); color:#fff">Red Rockets</span>
+                <span class="t-title">Round complete</span>
+              </div>
+              <div class="screen-scroll">
+                <div class="row" style="gap:var(--s-sm)">
+                  <div class="stat-tile"><div class="n" style="color:var(--correct)">7</div><div class="l">Correct</div></div>
+                  <div class="stat-tile"><div class="n" style="color:var(--skip-pressed)">2</div><div class="l">Skipped</div></div>
+                  <div class="stat-tile"><div class="n" style="color:var(--foul)">1</div><div class="l">Fouls</div></div>
+                </div>
+                <div class="word-card" style="padding:var(--s-lg)">
+                  <div class="between" style="width:100%"><span class="t-heading">Score change</span><span class="t-title" style="color:var(--correct)">+6</span></div>
+                  <div class="between" style="width:100%"><span class="muted">New total</span><span class="t-heading">18</span></div>
+                </div>
+                <div>
+                  <div class="form-section-title">Word recap · tap to flip a call</div>
+                  <div class="stack" style="gap:var(--s-sm)">
+                    <div class="score-row"><div class="name">Anchor</div><span class="chip chip--correct">✓</span></div>
+                    <div class="score-row"><div class="name">Volcano</div><span class="chip chip--correct">✓</span></div>
+                    <div class="score-row"><div class="name">Jigsaw</div><span class="chip chip--skip">↪</span></div>
+                    <div class="score-row"><div class="name">Compass</div><span class="chip chip--foul">⚑</span></div>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div class="sticky-footer"><button class="btn btn--primary btn--xl">Continue</button></div>
+          </div></div>
+          <div class="caption">4 · Round Result</div>
+        </div>
+
+        <!-- ===== WINNER ===== -->
+        <div class="phone-wrap">
+          <div class="phone"><div class="screen"><div class="notch"></div>
+            <div class="statusbar"><span>9:41</span><span>▮▮▮ 100%</span></div>
+            <div class="screen-body">
+              <div class="center-col" style="flex:0 0 auto; padding-top:var(--s-xl)">
+                <div class="confetti">🎉 🏆 🎊</div>
+                <div class="t-display" style="color:var(--team-1); text-align:center; font-size:38px">Red Rockets win!</div>
+              </div>
+              <div class="screen-scroll">
+                <div class="form-section-title">Final scoreboard</div>
+                <div class="stack" style="gap:var(--s-sm)">
+                  <div class="score-row leader"><div class="rank">1</div><div class="team-dot" style="background:var(--team-1)"></div><div class="name">Red Rockets<div class="t-caption muted">18 correct · 4 skip</div></div><div class="pts">18</div></div>
+                  <div class="score-row"><div class="rank">2</div><div class="team-dot" style="background:var(--team-2)"></div><div class="name">Blue Bolts<div class="t-caption muted">14 correct · 6 skip</div></div><div class="pts">14</div></div>
+                  <div class="score-row"><div class="rank">3</div><div class="team-dot" style="background:var(--team-3)"></div><div class="name">Green Giants<div class="t-caption muted">11 correct · 3 skip</div></div><div class="pts">11</div></div>
+                </div>
+                <div class="t-caption muted" style="text-align:center">9 rounds played · Time Score</div>
+              </div>
+            </div>
+            <div class="sticky-footer">
+              <div class="row" style="flex-wrap:nowrap">
+                <button class="btn btn--secondary" style="flex:1">New Game</button>
+                <button class="btn btn--primary" style="flex:1">Restart</button>
+              </div>
+            </div>
+          </div></div>
+          <div class="caption">5 · Winner</div>
+        </div>
+
+        <!-- ===== GAME INTRO is screen 2 above ===== -->
+
+        <!-- ===== RULES ===== -->
+        <div class="phone-wrap">
+          <div class="phone"><div class="screen"><div class="notch"></div>
+            <div class="statusbar"><span>9:41</span><span>▮▮▮ 100%</span></div>
+            <div class="screen-body">
+              <div class="between" style="margin-bottom:var(--s-sm)"><span class="t-title">How to play</span><button class="icon-btn">✕</button></div>
+              <div class="screen-scroll">
+                <div>
+                  <div class="form-section-title">The goal</div>
+                  <div class="t-body">One player describes the on-screen word <b>without saying it</b>. Teammates shout guesses. Mark each word and race the timer — most points wins.</div>
+                </div>
+                <div>
+                  <div class="form-section-title">Marking words</div>
+                  <div class="stack" style="gap:var(--s-sm)">
+                    <div class="score-row"><span class="chip chip--correct">✓</span><div class="name">Correct — they guessed it · <b>+1</b></div></div>
+                    <div class="score-row"><span class="chip chip--skip">↪</span><div class="name">Skip — pass to the next word · <b>0 / −1</b></div></div>
+                    <div class="score-row"><span class="chip chip--foul">⚑</span><div class="name">Foul — you said the word · <b>−1</b></div></div>
+                  </div>
+                </div>
+                <div>
+                  <div class="form-section-title">Game modes</div>
+                  <div class="stack" style="gap:var(--s-sm)">
+                    <div class="score-row"><div class="name"><b>Time Score</b><div class="t-caption muted">Each team plays a set number of rounds. Highest total wins.</div></div></div>
+                    <div class="score-row"><div class="name"><b>Max Score</b><div class="t-caption muted">First to the target score wins. Finish the rotation for fairness.</div></div></div>
+                  </div>
+                </div>
+                <div>
+                  <div class="form-section-title">Describe modes</div>
+                  <div class="row" style="gap:var(--s-sm)">
+                    <span class="chip chip--neutral">Describe</span><span class="chip chip--neutral">Taboo</span><span class="chip chip--neutral">One word</span><span class="chip chip--neutral">Charades</span>
+                  </div>
+                </div>
+                <div>
+                  <div class="form-section-title">Ending & ties</div>
+                  <div class="t-body">Ends when all rounds are played (Time) or the target is hit (Max). Level scores show a draw — or play a sudden-death round.</div>
+                </div>
+              </div>
+            </div>
+          </div></div>
+          <div class="caption">6 · Rules</div>
+        </div>
+
+        <!-- ===== SETTINGS ===== -->
+        <div class="phone-wrap">
+          <div class="phone"><div class="screen"><div class="notch"></div>
+            <div class="statusbar"><span>9:41</span><span>▮▮▮ 100%</span></div>
+            <div class="screen-body">
+              <div class="between" style="margin-bottom:var(--s-sm)"><span class="t-title">Settings</span><button class="icon-btn">✕</button></div>
+              <div class="screen-scroll">
+                <div>
+                  <div class="form-section-title">Sound & haptics</div>
+                  <div class="stack" style="gap:var(--s-sm)">
+                    <div class="score-row between"><span class="t-label">Sound effects</span><div class="switch on"><div class="knob"></div></div></div>
+                    <div class="score-row between"><span class="t-label">Vibration</span><div class="switch on"><div class="knob"></div></div></div>
+                  </div>
+                </div>
+                <div>
+                  <div class="form-section-title">Appearance</div>
+                  <div class="stack" style="gap:var(--s-sm)">
+                    <div class="score-row" style="flex-direction:column; align-items:stretch; gap:var(--s-sm)"><span class="t-label">Theme</span><div class="segmented" style="display:flex"><div class="seg active" style="flex:1;text-align:center">Light</div><div class="seg" style="flex:1;text-align:center">Dark</div><div class="seg" style="flex:1;text-align:center">System</div></div></div>
+                    <div class="score-row between"><span class="t-label">High contrast</span><div class="switch"><div class="knob"></div></div></div>
+                    <div class="score-row between"><span class="t-label">Large text</span><div class="switch"><div class="knob"></div></div></div>
+                  </div>
+                </div>
+                <div>
+                  <div class="form-section-title">Layout & language</div>
+                  <div class="stack" style="gap:var(--s-sm)">
+                    <div class="score-row between"><span class="t-label">Handedness</span><div class="segmented"><div class="seg active">Right</div><div class="seg">Left</div></div></div>
+                    <div class="score-row between"><span class="t-label">Language</span><span class="t-body muted">English ›</span></div>
+                  </div>
+                </div>
+                <div>
+                  <div class="form-section-title">Defaults</div>
+                  <div class="stack" style="gap:var(--s-md)">
+                    <div class="between"><span class="t-label">Round duration</span><span class="badge">60s</span></div>
+                    <div class="slider" style="width:100%"><div class="track"><div class="fill" style="width:30%"></div><div class="thumb" style="left:30%"></div></div></div>
+                    <div class="between"><span class="t-label">Correct score</span><div class="stepper"><button>−</button><span class="val">+1</span><button>+</button></div></div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div></div>
+          <div class="caption">7 · Settings</div>
+        </div>
+
+        <!-- ===== WORD PACKS ===== -->
+        <div class="phone-wrap">
+          <div class="phone"><div class="screen"><div class="notch"></div>
+            <div class="statusbar"><span>9:41</span><span>▮▮▮ 100%</span></div>
+            <div class="screen-body">
+              <div class="between" style="margin-bottom:var(--s-sm)"><span class="t-title">Word Packs</span><button class="icon-btn">✕</button></div>
+              <div class="screen-scroll">
+                <div>
+                  <div class="form-section-title">Content filter</div>
+                  <div class="segmented" style="display:flex"><div class="seg" style="flex:1;text-align:center">Kids</div><div class="seg active" style="flex:1;text-align:center">Standard</div><div class="seg" style="flex:1;text-align:center">Adult</div></div>
+                </div>
+                <div>
+                  <div class="form-section-title">Difficulty</div>
+                  <div class="row" style="gap:var(--s-sm)"><span class="chip chip--easy">Easy</span><span class="chip chip--medium">Medium</span><span class="chip chip--hard">Hard</span></div>
+                </div>
+                <div>
+                  <div class="form-section-title">Select packs · combine as one deck</div>
+                  <div class="stack" style="gap:var(--s-sm)">
+                    <div class="score-row leader"><span style="font-size:20px">⭐</span><div class="name">Standard<div class="t-caption muted">500 words · default</div></div><span style="color:var(--primary); font-weight:800">✓</span></div>
+                    <div class="score-row leader"><span style="font-size:20px">🐾</span><div class="name">Animals<div class="t-caption muted">120 words</div></div><span class="chip chip--easy">Easy</span><span style="color:var(--primary); font-weight:800">✓</span></div>
+                    <div class="score-row leader"><span style="font-size:20px">🎬</span><div class="name">Movies<div class="t-caption muted">200 words</div></div><span class="chip chip--medium">Med</span><span style="color:var(--primary); font-weight:800">✓</span></div>
+                    <div class="score-row"><span style="font-size:20px">⚽</span><div class="name">Sports<div class="t-caption muted">90 words</div></div><span class="chip chip--medium">Med</span></div>
+                    <div class="score-row"><span style="font-size:20px">🎃</span><div class="name">Halloween<div class="t-caption muted">seasonal · 60 words</div></div><span class="chip chip--hard">Hard</span></div>
+                  </div>
+                </div>
+                <div class="stack" style="gap:var(--s-sm)">
+                  <button class="btn btn--secondary btn--block">＋ Create custom pack</button>
+                  <button class="btn btn--primary btn--block">✨ Generate with AI</button>
+                </div>
+              </div>
+            </div>
+            <div class="sticky-footer"><button class="btn btn--primary btn--xl">Use 3 packs · 810 words combined</button></div>
+            <div class="sticky-footer"><button class="btn btn--primary btn--xl">Done</button></div>
+          </div></div>
+          <div class="caption">8 · Word Packs</div>
+        </div>
+
+        <!-- ===== WORD LANGUAGE (idea 1) ===== -->
+        <div class="phone-wrap">
+          <div class="phone"><div class="screen"><div class="notch"></div>
+            <div class="statusbar"><span>9:41</span><span>▮▮▮ 100%</span></div>
+            <div class="screen-body">
+              <div class="between" style="margin-bottom:var(--s-sm)"><span class="t-title">Word language</span><button class="icon-btn">✕</button></div>
+              <div class="screen-scroll">
+                <div class="t-body muted">The language of the word cards — separate from the app language.</div>
+                <div>
+                  <div class="form-section-title">Language</div>
+                  <div class="stack" style="gap:var(--s-sm)">
+                    <div class="score-row leader"><span style="font-size:20px">🇬🇧</span><div class="name">English<div class="t-caption muted">Ready offline</div></div><span style="color:var(--primary);font-weight:800">✓</span></div>
+                    <div class="score-row"><span style="font-size:20px">🇪🇸</span><div class="name">Español<div class="t-caption muted">Ready offline</div></div></div>
+                    <div class="score-row"><span style="font-size:20px">🇫🇷</span><div class="name">Français<div class="t-caption muted">Tap to download</div></div><span class="chip chip--neutral">↓ 1.2 MB</span></div>
+                    <div class="score-row"><span style="font-size:20px">🇩🇪</span><div class="name">Deutsch<div class="t-caption muted">Tap to download</div></div><span class="chip chip--neutral">↓ 1.1 MB</span></div>
+                    <div class="score-row"><span style="font-size:20px">🇵🇹</span><div class="name">Português<div class="t-caption muted">Tap to download</div></div><span class="chip chip--neutral">↓ 1.0 MB</span></div>
+                  </div>
+                </div>
+                <div>
+                  <div class="form-section-title">Bilingual — Translate-a-pack</div>
+                  <div class="score-row between"><span class="t-label">Enable bilingual mode</span><div class="switch on"><div class="knob"></div></div></div>
+                  <div class="word-card" style="padding:var(--s-md); margin-top:var(--s-sm); gap:var(--s-sm)">
+                    <div class="t-caption muted">Show in Español → say in English</div>
+                    <div class="t-display" style="font-size:32px">manzana</div>
+                    <div class="chip chip--correct">say “apple”</div>
+                  </div>
+                  <div class="t-caption muted" style="margin-top:6px">Saying the direct translation is the goal — Alias's core rule, as a mode.</div>
+                </div>
+              </div>
+            </div>
+            <div class="sticky-footer"><button class="btn btn--primary btn--xl">Done</button></div>
+          </div></div>
+          <div class="caption">9 · Word Language (idea 1)</div>
+        </div>
+
+        <!-- ===== AI GENERATE — input + progress (idea 2) ===== -->
+        <div class="phone-wrap">
+          <div class="phone"><div class="screen"><div class="notch"></div>
+            <div class="statusbar"><span>9:41</span><span>▮▮▮ 100%</span></div>
+            <div class="screen-body">
+              <div class="between" style="margin-bottom:var(--s-sm)"><span class="t-title">Generate with AI ✨</span><button class="icon-btn">✕</button></div>
+              <div class="screen-scroll">
+                <div>
+                  <div class="form-section-title">Theme</div>
+                  <input class="input" value="Harry Potter movies" />
+                  <div class="row" style="gap:var(--s-sm); margin-top:var(--s-sm)"><span class="chip chip--neutral">90s cartoons</span><span class="chip chip--neutral">Kitchen utensils</span><span class="chip chip--neutral">Office in-jokes</span></div>
+                </div>
+                <div class="row" style="gap:var(--s-md)">
+                  <div style="flex:1"><div class="form-section-title">Words</div><div class="stepper"><button>−</button><span class="val">50</span><button>+</button></div></div>
+                  <div style="flex:1"><div class="form-section-title">Language</div><span class="chip chip--neutral">🇬🇧 English</span></div>
+                </div>
+                <div><div class="form-section-title">Filter</div><div class="segmented" style="display:flex"><div class="seg" style="flex:1;text-align:center">Kids</div><div class="seg active" style="flex:1;text-align:center">Std</div><div class="seg" style="flex:1;text-align:center">Adult</div></div></div>
+                <div class="score-row between"><span class="t-label">Auto-fill Taboo + translations</span><div class="switch on"><div class="knob"></div></div></div>
+                <div class="word-card" style="padding:var(--s-md); gap:var(--s-sm); align-items:stretch">
+                  <div class="between"><span class="t-label">◐ Generating…</span><span class="t-label" style="color:var(--primary)">37 / 50</span></div>
+                  <div class="slider" style="width:100%"><div class="track"><div class="fill" style="width:74%"></div></div></div>
+                  <div class="row" style="gap:6px"><span class="chip chip--easy">Wand</span><span class="chip chip--hard">Quidditch</span><span class="chip chip--medium">Potion</span><span class="chip chip--neutral">Owl</span></div>
+                  <div class="t-caption muted">Words stream in as they're generated — start reviewing now.</div>
+                </div>
+              </div>
+            </div>
+            <div class="sticky-footer"><button class="btn btn--secondary btn--xl">Cancel</button></div>
+          </div></div>
+          <div class="caption">AI Generate — input + progress (idea 2)</div>
+        </div>
+
+        <!-- ===== AI PACK GENERATOR (idea 2) ===== -->
+        <div class="phone-wrap">
+          <div class="phone"><div class="screen"><div class="notch"></div>
+            <div class="statusbar"><span>9:41</span><span>▮▮▮ 100%</span></div>
+            <div class="screen-body">
+              <div class="between" style="margin-bottom:var(--s-sm)"><span class="t-title">Generate with AI ✨</span><button class="icon-btn">✕</button></div>
+              <div class="screen-scroll">
+                <div>
+                  <div class="form-section-title">Theme</div>
+                  <input class="input" value="Harry Potter movies" />
+                  <div class="t-caption muted" style="margin-top:4px">19 / 200 · words generated in English</div>
+                </div>
+                <div class="row" style="gap:var(--s-md)">
+                  <div style="flex:1"><div class="form-section-title">Words</div><div class="stepper"><button>−</button><span class="val">50</span><button>+</button></div></div>
+                  <div style="flex:1"><div class="form-section-title">Filter</div><div class="segmented"><div class="seg">Kids</div><div class="seg active">Std</div></div></div>
+                </div>
+                <div class="score-row between"><span class="t-label">Auto-fill Taboo + translations</span><div class="switch on"><div class="knob"></div></div></div>
+                <div class="between"><div class="form-section-title" style="margin:0">Draft · 37 / 50 generated</div><span class="chip chip--neutral">AI</span></div>
+                <div class="stack" style="gap:var(--s-sm)">
+                  <div class="score-row"><div class="name">Wand<div class="t-caption muted">taboo: magic · stick · spell</div></div><span class="chip chip--easy">Easy</span><button class="icon-btn">↺</button></div>
+                  <div class="score-row"><div class="name">Quidditch<div class="t-caption muted">taboo: broom · sport · snitch</div></div><span class="chip chip--hard">Hard</span><button class="icon-btn">↺</button></div>
+                  <div class="score-row"><div class="name">Potion<div class="t-caption muted">taboo: brew · cauldron · mix</div></div><span class="chip chip--medium">Med</span><button class="icon-btn">↺</button></div>
+                </div>
+                <div class="t-caption muted">⚠️ With the Kids filter, the theme prompt is gated behind an adult.</div>
+              </div>
+            </div>
+            <div class="sticky-footer"><button class="btn btn--primary btn--xl">Review &amp; save pack</button></div>
+          </div></div>
+          <div class="caption">10 · AI Pack Generator (idea 2)</div>
+        </div>
+
+        <!-- ===== PACK EDITOR (idea 2) ===== -->
+        <div class="phone-wrap">
+          <div class="phone"><div class="screen"><div class="notch"></div>
+            <div class="statusbar"><span>9:41</span><span>▮▮▮ 100%</span></div>
+            <div class="screen-body">
+              <div class="between" style="margin-bottom:var(--s-sm)"><span class="t-title">New pack</span><button class="icon-btn">✕</button></div>
+              <div class="screen-scroll">
+                <div class="row" style="gap:var(--s-sm); flex-wrap:nowrap"><button class="icon-btn" style="font-size:22px">🎬</button><input class="input" style="flex:1" value="Cult movies" /></div>
+                <div class="row" style="gap:var(--s-md)">
+                  <div style="flex:1"><div class="form-section-title">Language</div><span class="chip chip--neutral">🇬🇧 English</span></div>
+                  <div style="flex:1"><div class="form-section-title">Rating</div><div class="segmented"><div class="seg active">Std</div><div class="seg">Adult</div></div></div>
+                </div>
+                <div class="between"><div class="form-section-title" style="margin:0">Words · 24 · no duplicates</div><button class="btn btn--secondary" style="min-height:34px;padding:0 12px">Paste list</button></div>
+                <div class="stack" style="gap:var(--s-sm)">
+                  <div class="score-row" style="flex-wrap:nowrap"><input class="input" style="flex:1" value="Goodfellas" /><span class="chip chip--medium">M</span><button class="icon-btn">✕</button></div>
+                  <div class="score-row" style="flex-wrap:nowrap"><input class="input" style="flex:1" value="Big Lebowski" /><span class="chip chip--medium">M</span><button class="icon-btn">✕</button></div>
+                  <div class="score-row" style="flex-wrap:nowrap"><input class="input" style="flex:1" value="Donnie Darko" /><span class="chip chip--hard">H</span><button class="icon-btn">✕</button></div>
+                </div>
+                <button class="btn btn--secondary btn--block">＋ Add word</button>
+              </div>
+            </div>
+            <div class="sticky-footer"><div class="row" style="flex-wrap:nowrap"><button class="btn btn--secondary" style="flex:1">Share</button><button class="btn btn--primary" style="flex:1">Save</button></div></div>
+          </div></div>
+          <div class="caption">11 · Pack Editor (idea 2)</div>
+        </div>
+
+        <!-- ===== ADD / EDIT WORD (idea 2) ===== -->
+        <div class="phone-wrap">
+          <div class="phone"><div class="screen"><div class="notch"></div>
+            <div class="statusbar"><span>9:41</span><span>▮▮▮ 100%</span></div>
+            <div class="screen-body">
+              <div class="between" style="margin-bottom:var(--s-sm)"><span class="t-title">Add word</span><button class="icon-btn">✕</button></div>
+              <div class="screen-scroll">
+                <div><div class="form-section-title">Word</div><input class="input" value="Lighthouse" style="font-size:20px" /></div>
+                <div><div class="form-section-title">Difficulty</div><div class="segmented" style="display:flex"><div class="seg" style="flex:1;text-align:center">Easy</div><div class="seg active" style="flex:1;text-align:center">Medium</div><div class="seg" style="flex:1;text-align:center">Hard</div></div></div>
+                <div>
+                  <div class="between"><div class="form-section-title" style="margin:0">Forbidden words · 3–5</div><button class="btn btn--secondary" style="min-height:32px;padding:0 12px">✨ Auto-fill</button></div>
+                  <div class="stack" style="gap:var(--s-sm); margin-top:var(--s-sm)">
+                    <div class="score-row" style="flex-wrap:nowrap"><input class="input" style="flex:1" value="beacon" /><button class="icon-btn">✕</button></div>
+                    <div class="score-row" style="flex-wrap:nowrap"><input class="input" style="flex:1" value="tower" /><button class="icon-btn">✕</button></div>
+                    <div class="score-row" style="flex-wrap:nowrap"><input class="input" style="flex:1" value="coast" /><button class="icon-btn">✕</button></div>
+                    <button class="btn btn--secondary btn--block">＋ Add forbidden word</button>
+                  </div>
+                </div>
+                <div><div class="form-section-title">Spanish translation <span class="t-caption muted">(bilingual)</span></div><input class="input" value="Faro" /></div>
+              </div>
+            </div>
+            <div class="sticky-footer"><button class="btn btn--primary btn--xl">Save word</button></div>
+          </div></div>
+          <div class="caption">Add / edit Word (idea 2)</div>
+        </div>
+
+        <!-- ===== DISCOVER / PUBLISH (idea 2) ===== -->
+        <div class="phone-wrap">
+          <div class="phone"><div class="screen"><div class="notch"></div>
+            <div class="statusbar"><span>9:41</span><span>▮▮▮ 100%</span></div>
+            <div class="screen-body">
+              <div class="between" style="margin-bottom:var(--s-sm)"><span class="t-title">Pack Library</span><button class="icon-btn">＋</button></div>
+              <div class="segmented" style="display:flex; margin-bottom:var(--s-sm)"><div class="seg" style="flex:1;text-align:center">My Packs</div><div class="seg active" style="flex:1;text-align:center">Discover</div></div>
+              <input class="input" placeholder="Search community packs" />
+              <div class="row" style="gap:var(--s-sm); margin:var(--s-sm) 0"><span class="chip chip--neutral">🇬🇧 English</span><span class="chip chip--neutral">Standard</span><span class="chip chip--neutral">Popular ▾</span></div>
+              <div class="screen-scroll">
+                <div class="score-row" style="flex-wrap:nowrap"><span style="font-size:22px">🧙</span><div class="name">Wizarding World<div class="t-caption muted">by Mauve-Otter · 120 · ★4.8 · 12k</div></div><button class="btn btn--secondary" style="min-height:34px;padding:0 14px">Get</button></div>
+                <div class="score-row" style="flex-wrap:nowrap"><span style="font-size:22px">🍕</span><div class="name">Foodie Faves<div class="t-caption muted">by Teal-Fox · 80 · ★4.5 · 3k</div></div><button class="btn btn--secondary" style="min-height:34px;padding:0 14px">Get</button></div>
+                <div class="score-row" style="flex-wrap:nowrap"><span style="font-size:22px">⚽</span><div class="name">World Sports<div class="t-caption muted">by Blue-Jay · 140 · ★4.4 · 2k</div></div><button class="btn btn--secondary" style="min-height:34px;padding:0 14px">Get</button></div>
+                <div class="score-row" style="flex-wrap:nowrap"><span style="font-size:22px">🎬</span><div class="name">Cult Movies<div class="t-caption muted">by Red-Wolf · 150 · ★4.2 · 900</div></div><button class="btn btn--secondary" style="min-height:34px;padding:0 14px">Get</button></div>
+                <div class="t-caption muted" style="text-align:center">Packs are moderated · tap ⋯ to report</div>
+              </div>
+            </div>
+          </div></div>
+          <div class="caption">12 · Discover / Publish (idea 2)</div>
+        </div>
+
+        <!-- ===== SIGN UP (account, idea 3) ===== -->
+        <div class="phone-wrap">
+          <div class="phone"><div class="screen"><div class="notch"></div>
+            <div class="statusbar"><span>9:41</span><span>▮▮▮ 100%</span></div>
+            <div class="screen-body">
+              <div class="between" style="margin-bottom:var(--s-sm)"><span class="t-title">Create account</span><button class="icon-btn">✕</button></div>
+              <div class="screen-scroll">
+                <div class="t-body muted">You only need an account to <b>publish</b> packs. Playing, creating, and AI stay account-free.</div>
+                <div><div class="form-section-title">Nickname</div><input class="input" value="WordWizard" /></div>
+                <div><div class="form-section-title">Email</div><input class="input" value="you@example.com" /></div>
+                <div><div class="form-section-title">Password</div><input class="input" value="••••••••" /></div>
+                <div class="t-caption muted">We'll send a verification link. Used for sign-in, creator credit, and abuse contact.</div>
+              </div>
+            </div>
+            <div class="sticky-footer">
+              <button class="btn btn--primary btn--xl">Create account</button>
+              <div class="t-caption muted" style="text-align:center; margin-top:var(--s-sm)">Already have one? <b style="color:var(--primary)">Sign in</b></div>
+            </div>
+          </div></div>
+          <div class="caption">13 · Sign Up (idea 3)</div>
+        </div>
+
+        <!-- ===== PROFILE (account, idea 3) ===== -->
+        <div class="phone-wrap">
+          <div class="phone"><div class="screen"><div class="notch"></div>
+            <div class="statusbar"><span>9:41</span><span>▮▮▮ 100%</span></div>
+            <div class="screen-body">
+              <div class="between" style="margin-bottom:var(--s-sm)"><span class="t-title">Profile</span><button class="icon-btn">⚙</button></div>
+              <div class="screen-scroll">
+                <div class="center-col" style="flex:0 0 auto; gap:var(--s-xs); padding:var(--s-md) 0">
+                  <div style="font-size:48px">🧙</div>
+                  <div class="t-heading">WordWizard</div>
+                  <div class="t-caption muted">Member since Jun 2026 · Edit profile</div>
+                </div>
+                <div class="row" style="gap:var(--s-sm)">
+                  <div class="stat-tile"><div class="n">7</div><div class="l">Packs</div></div>
+                  <div class="stat-tile"><div class="n">18k</div><div class="l">Installs</div></div>
+                  <div class="stat-tile"><div class="n">★4.7</div><div class="l">Rating</div></div>
+                </div>
+                <div>
+                  <div class="form-section-title">My packs</div>
+                  <div class="stack" style="gap:var(--s-sm)">
+                    <div class="score-row"><span style="font-size:20px">🧙</span><div class="name">Wizarding World<div class="t-caption muted">12k installs · ★4.8</div></div><span class="chip chip--easy">Published</span></div>
+                    <div class="score-row"><span style="font-size:20px">🍕</span><div class="name">Foodie Faves<div class="t-caption muted">3k installs · ★4.5</div></div><span class="chip chip--easy">Published</span></div>
+                    <div class="score-row"><span style="font-size:20px">🎬</span><div class="name">Cult Movies<div class="t-caption muted">in review</div></div><span class="chip chip--medium">Pending</span></div>
+                    <div class="score-row"><span style="font-size:20px">📝</span><div class="name">Office in-jokes<div class="t-caption muted">draft · not published</div></div><span class="chip chip--neutral">Draft</span></div>
+                  </div>
+                </div>
+                <div class="stack" style="gap:var(--s-sm)">
+                  <button class="btn btn--secondary btn--block">Change password</button>
+                  <button class="btn btn--secondary btn--block">Sign out</button>
+                </div>
+              </div>
+            </div>
+          </div></div>
+          <div class="caption">14 · Profile (idea 3)</div>
+        </div>
+
+        <!-- ===== FIRST RUN · APP (UI) LANGUAGE ===== -->
+        <div class="phone-wrap">
+          <div class="phone"><div class="screen"><div class="notch"></div>
+            <div class="statusbar"><span>9:41</span><span>▮▮▮ 100%</span></div>
+            <div class="screen-body">
+              <div style="padding-top:var(--s-sm)">
+                <div class="t-title">Choose your language</div>
+                <div class="t-body muted" style="margin-top:4px">This sets the app's interface language. You can change it later in Settings.</div>
+              </div>
+              <div class="screen-scroll" style="margin-top:var(--s-md)">
+                <!-- RN: LanguageRow list — endonym + flag + radio check. Bundled launch set: en es fr de pt -->
+                <div class="form-section-title">Bundled with the app</div>
+                <div class="stack" style="gap:var(--s-sm)">
+                  <div class="score-row is-selected">
+                    <span class="lang-flag">🇬🇧</span>
+                    <div class="lang-name">English<div class="sub">English</div></div>
+                    <span class="radio is-on">✓</span>
+                  </div>
+                  <div class="score-row">
+                    <span class="lang-flag">🇪🇸</span>
+                    <div class="lang-name">Español<div class="sub">Spanish</div></div>
+                    <span class="radio"></span>
+                  </div>
+                  <div class="score-row">
+                    <span class="lang-flag">🇫🇷</span>
+                    <div class="lang-name">Français<div class="sub">French</div></div>
+                    <span class="radio"></span>
+                  </div>
+                  <div class="score-row">
+                    <span class="lang-flag">🇩🇪</span>
+                    <div class="lang-name">Deutsch<div class="sub">German</div></div>
+                    <span class="radio"></span>
+                  </div>
+                  <div class="score-row">
+                    <span class="lang-flag">🇵🇹</span>
+                    <div class="lang-name">Português<div class="sub">Portuguese</div></div>
+                    <span class="radio"></span>
+                  </div>
+                </div>
+                <div class="t-caption muted" style="text-align:center">More interface languages coming after launch.</div>
+              </div>
+            </div>
+            <div class="sticky-footer"><button class="btn btn--primary btn--xl">Continue</button></div>
+          </div></div>
+          <div class="caption">15 · First run — App (UI) language <span class="muted">(interface language; en/es/fr/de/pt bundled · NOT the word language)</span></div>
+        </div>
+
+        <!-- ===== FIRST RUN · WORD LANGUAGE (offline download states) ===== -->
+        <div class="phone-wrap">
+          <div class="phone"><div class="screen"><div class="notch"></div>
+            <div class="statusbar"><span>9:41</span><span>▮▮▮ 100%</span></div>
+            <div class="screen-body">
+              <div style="padding-top:var(--s-sm)">
+                <div class="t-title">Choose word language</div>
+                <div class="t-body muted" style="margin-top:4px">The language of the game's word cards — independent of the app language.</div>
+              </div>
+              <div class="screen-scroll" style="margin-top:var(--s-md)">
+                <!-- RN: NoteCallout — the offline-download rationale -->
+                <div class="note">
+                  <span class="ico">📥</span>
+                  <span class="txt">Download the languages you want so you can play offline. Selecting a language doesn't require a download — but downloaded ones work with no network.</span>
+                </div>
+
+                <div class="form-section-title">Available languages</div>
+                <div class="stack" style="gap:var(--s-sm)">
+
+                  <!-- selected + downloaded (radio on, "Available offline" badge) -->
+                  <div class="score-row is-selected">
+                    <span class="lang-flag">🇬🇧</span>
+                    <div class="lang-name">English<div class="sub">English</div></div>
+                    <span class="badge--offline">✓ Available offline</span>
+                    <span class="radio is-on">✓</span>
+                  </div>
+
+                  <!-- downloaded, not selected -->
+                  <div class="score-row">
+                    <span class="lang-flag">🇪🇸</span>
+                    <div class="lang-name">Español<div class="sub">Spanish</div></div>
+                    <span class="badge--offline">✓ Available offline</span>
+                    <span class="radio"></span>
+                  </div>
+
+                  <!-- DOWNLOADING — determinate progress ring + % -->
+                  <div class="score-row">
+                    <span class="lang-flag">🇫🇷</span>
+                    <div class="lang-name">Français<div class="sub">French · downloading…</div></div>
+                    <span class="dl-progress">
+                      <span class="dl-ring" style="--p:62"><span class="pct">62%</span></span>
+                    </span>
+                    <span class="radio"></span>
+                  </div>
+
+                  <!-- NOT DOWNLOADED — Download button + size -->
+                  <div class="score-row">
+                    <span class="lang-flag">🇩🇪</span>
+                    <div class="lang-name">Deutsch<div class="sub">German</div></div>
+                    <div style="display:flex; flex-direction:column; align-items:flex-end; flex:0 0 auto">
+                      <button class="dl-btn">↓ Download</button>
+                      <span class="dl-size">1.1 MB</span>
+                    </div>
+                    <span class="radio"></span>
+                  </div>
+
+                  <!-- NOT DOWNLOADED -->
+                  <div class="score-row">
+                    <span class="lang-flag">🇵🇹</span>
+                    <div class="lang-name">Português<div class="sub">Portuguese</div></div>
+                    <div style="display:flex; flex-direction:column; align-items:flex-end; flex:0 0 auto">
+                      <button class="dl-btn">↓ Download</button>
+                      <span class="dl-size">1.0 MB</span>
+                    </div>
+                    <span class="radio"></span>
+                  </div>
+
+                  <!-- beyond the launch 5 → implies a dynamic server catalog -->
+                  <div class="score-row">
+                    <span class="lang-flag">🇮🇹</span>
+                    <div class="lang-name">Italiano<div class="sub">Italian</div></div>
+                    <div style="display:flex; flex-direction:column; align-items:flex-end; flex:0 0 auto">
+                      <button class="dl-btn">↓ Download</button>
+                      <span class="dl-size">1.2 MB</span>
+                    </div>
+                    <span class="radio"></span>
+                  </div>
+
+                  <div class="score-row">
+                    <span class="lang-flag">🇳🇱</span>
+                    <div class="lang-name">Nederlands<div class="sub">Dutch</div></div>
+                    <div style="display:flex; flex-direction:column; align-items:flex-end; flex:0 0 auto">
+                      <button class="dl-btn">↓ Download</button>
+                      <span class="dl-size">0.9 MB</span>
+                    </div>
+                    <span class="radio"></span>
+                  </div>
+
+                  <div class="score-row">
+                    <span class="lang-flag">🇵🇱</span>
+                    <div class="lang-name">Polski<div class="sub">Polish</div></div>
+                    <div style="display:flex; flex-direction:column; align-items:flex-end; flex:0 0 auto">
+                      <button class="dl-btn">↓ Download</button>
+                      <span class="dl-size">1.3 MB</span>
+                    </div>
+                    <span class="radio"></span>
+                  </div>
+                </div>
+                <div class="t-caption muted" style="text-align:center">Catalog updates over the air · new languages appear here.</div>
+              </div>
+            </div>
+            <div class="sticky-footer"><button class="btn btn--primary btn--xl">Continue</button></div>
+          </div></div>
+          <div class="caption">16 · First run — Word language <span class="muted">(download / downloading / available-offline states · dynamic catalog)</span></div>
+        </div>
+
+        <!-- ===== IN-SETUP · "Change language" entry point ===== -->
+        <div class="phone-wrap">
+          <div class="phone"><div class="screen"><div class="notch"></div>
+            <div class="statusbar"><span>9:41</span><span>▮▮▮ 100%</span></div>
+            <div class="screen-body">
+              <div class="between" style="margin-bottom:var(--s-sm)"><span class="t-title">New Game</span><button class="icon-btn">⚙</button></div>
+              <div class="screen-scroll">
+                <!-- Word language entry sits in Setup; value defaults to the first-run choice -->
+                <div>
+                  <div class="form-section-title">Word language</div>
+                  <!-- RN: SettingsRow — opens the Word-language sheet (next frame) -->
+                  <div class="settings-row">
+                    <span class="ico">🇬🇧</span>
+                    <div class="label">Change language<div class="t-caption muted" style="font-weight:400; margin-top:2px">Language of the word cards</div></div>
+                    <span class="value">English</span>
+                    <span class="chev">›</span>
+                  </div>
+                  <div class="t-caption muted" style="margin-top:6px">Defaults to your first-run choice. Add a second language for bilingual mode.</div>
+                </div>
+
+                <!-- context so the fragment reads as a real Setup screen -->
+                <div>
+                  <div class="form-section-title">Teams</div>
+                  <div class="stack" style="gap:var(--s-sm)">
+                    <div class="team-row"><div class="team-dot" style="background:var(--team-1)"></div><input class="input" value="Red Rockets" /><button class="icon-btn">✕</button></div>
+                    <div class="team-row"><div class="team-dot" style="background:var(--team-2)"></div><input class="input" value="Blue Bolts" /><button class="icon-btn">✕</button></div>
+                    <button class="btn btn--secondary btn--block">＋ Add team</button>
+                  </div>
+                </div>
+                <div>
+                  <div class="form-section-title">Timer &amp; scoring</div>
+                  <div class="between"><span class="t-label">Round duration</span><span class="badge">60s</span></div>
+                </div>
+              </div>
+            </div>
+            <div class="sticky-footer"><button class="btn btn--primary btn--xl">Start Game</button></div>
+          </div></div>
+          <div class="caption">17a · In-setup — Change language row <span class="muted">(in Setup; value defaults to first-run choice)</span></div>
+        </div>
+
+        <!-- ===== IN-SETUP · Word-language BOTTOM SHEET (primary + optional secondary) ===== -->
+        <div class="phone-wrap">
+          <div class="phone"><div class="screen"><div class="notch"></div>
+            <div class="statusbar"><span>9:41</span><span>▮▮▮ 100%</span></div>
+            <!-- dimmed Setup screen behind the sheet -->
+            <div class="screen-body" style="padding-bottom:0">
+              <div class="between" style="margin-bottom:var(--s-sm)"><span class="t-title">New Game</span><button class="icon-btn">⚙</button></div>
+              <div class="form-section-title">Word language</div>
+              <div class="settings-row" style="opacity:.5"><span class="ico">🇬🇧</span><div class="label">Change language</div><span class="value">English</span><span class="chev">›</span></div>
+            </div>
+
+            <!-- RN: BottomSheet over a .sheet-overlay backdrop -->
+            <div class="sheet-overlay">
+              <div class="sheet">
+                <div class="sheet-grabber"></div>
+                <div class="sheet-head">
+                  <span class="t-heading">Word language</span>
+                  <button class="icon-btn">✕</button>
+                </div>
+                <div class="sheet-body">
+
+                  <!-- PRIMARY — the language teams play in. Defaults to first-run choice, shown selected. -->
+                  <div>
+                    <div class="form-section-title">Primary — play language</div>
+                    <div class="stack" style="gap:var(--s-sm)">
+                      <div class="score-row is-selected">
+                        <span class="lang-flag">🇬🇧</span>
+                        <div class="lang-name">English<div class="sub">English</div></div>
+                        <span class="tag-role tag-role--primary">Primary</span>
+                        <span class="radio is-on">✓</span>
+                      </div>
+                      <div class="score-row">
+                        <span class="lang-flag">🇪🇸</span>
+                        <div class="lang-name">Español<div class="sub">Spanish</div></div>
+                        <span class="badge--offline">✓ Offline</span>
+                        <span class="radio"></span>
+                      </div>
+                      <div class="score-row">
+                        <span class="lang-flag">🇫🇷</span>
+                        <div class="lang-name">Français<div class="sub">French</div></div>
+                        <div style="display:flex; flex-direction:column; align-items:flex-end; flex:0 0 auto">
+                          <button class="dl-btn">↓ Get</button>
+                          <span class="dl-size">1.2 MB</span>
+                        </div>
+                        <span class="radio"></span>
+                      </div>
+                      <div class="score-row">
+                        <span class="lang-flag">🇩🇪</span>
+                        <div class="lang-name">Deutsch<div class="sub">German</div></div>
+                        <div style="display:flex; flex-direction:column; align-items:flex-end; flex:0 0 auto">
+                          <button class="dl-btn">↓ Get</button>
+                          <span class="dl-size">1.1 MB</span>
+                        </div>
+                        <span class="radio"></span>
+                      </div>
+                    </div>
+                  </div>
+
+                  <!-- SECONDARY — clearly optional. Chosen = dotted accent ring; empty = dashed add. -->
+                  <div>
+                    <div class="form-section-title">Secondary — optional · enables bilingual mode</div>
+                    <!-- chosen secondary (Español), distinct dotted accent treatment -->
+                    <div class="score-row is-secondary">
+                      <span class="lang-flag">🇪🇸</span>
+                      <div class="lang-name">Español<div class="sub">Show word → say the English answer</div></div>
+                      <span class="tag-role tag-role--secondary">2nd</span>
+                      <button class="icon-btn" style="width:32px;height:32px;font-size:14px">✕</button>
+                    </div>
+                    <div class="t-caption muted" style="margin:6px 0 var(--s-sm)">Bilingual mode shows the word in one language; the goal is to say it in the other.</div>
+                    <!-- empty state -->
+                    <button class="secondary-add"><span class="plus">＋</span> Add a second language <span class="muted" style="font-weight:400">(optional)</span></button>
+                  </div>
+                </div>
+                <div class="sheet-footer"><button class="btn btn--primary btn--xl">Apply</button></div>
+              </div>
+            </div>
+          </div></div>
+          <div class="caption">17b · In-setup — Word-language sheet <span class="muted">(Primary selected + optional Secondary = bilingual)</span></div>
+        </div>
+
+      </div>
+    </section>
+  </main>
+
+  <script>
+    // Gallery chrome only — not part of the RN port.
+    const navBtns = document.querySelectorAll('.nav button');
+    const panels = document.querySelectorAll('.panel');
+    navBtns.forEach(b => b.addEventListener('click', () => {
+      navBtns.forEach(x => x.classList.remove('active'));
+      panels.forEach(p => p.classList.remove('active'));
+      b.classList.add('active');
+      document.getElementById(b.dataset.panel).classList.add('active');
+    }));
+    const toggle = document.getElementById('themeToggle');
+    toggle.addEventListener('click', () => {
+      document.body.classList.toggle('dark');
+      toggle.textContent = document.body.classList.contains('dark') ? '◑ Light' : '◐ Dark';
+    });
+  </script>
+</body>
+</html>

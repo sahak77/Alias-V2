@@ -1,0 +1,1165 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Alias — Arcade Style (fun / addictive direction)</title>
+<!--
+  Alias Game · ARCADE style exploration
+  --------------------------------------
+  A bolder, game-show / candy-arcade alternative to the refined system in index.html.
+  Still RN-portable, just leaning into juice:
+    • Chunky "pushable" 3D buttons  → RN: View w/ translateY on pressIn + bottom shadow
+    • Neon glow                     → RN: shadowColor/shadowRadius (iOS) + elevation, or a glow PNG
+    • Gradients                     → RN: expo-linear-gradient
+    • Motion (pulse/float/shimmer)  → RN: react-native-reanimated
+    • Confetti                      → RN: react-native-confetti-cannon / reanimated
+  Gamified extras shown: combo multiplier, Golden Word, power-ups, streak/coins meta.
+-->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@500;600;700&display=swap" rel="stylesheet">
+<style>
+  /* ===================== ARCADE TOKENS ===================== */
+  :root {
+    --bg-0: #150C2E;
+    --bg-1: #0C0720;
+    --card: #221552;
+    --card-2: #2B1B66;
+    --glass: rgba(255,255,255,.06);
+    --glass-line: rgba(255,255,255,.14);
+    --ink: #FFFFFF;
+    --ink-dim: #B9AEE6;
+
+    /* candy / neon accents */
+    --pink: #FF2E93;        --pink-dk: #C8186E;
+    --purple: #9D4EDD;      --purple-dk: #6E2AB0;
+    --cyan: #21E6E6;        --cyan-dk: #129E9E;
+    --lime: #38E66B;        --lime-dk: #1EA94B;
+    --amber: #FFB020;       --amber-dk: #CC8400;
+    --red: #FF4D6D;         --red-dk: #CC2E4C;
+    --gold: #FFD23F;        --gold-dk: #D9A300;
+
+    /* team palette (neon) */
+    --team-1:#FF4D6D; --team-2:#36A9FF; --team-3:#38E66B; --team-4:#FFB020;
+    --team-5:#B06BFF; --team-6:#21E6E6; --team-7:#FF63C6; --team-8:#FF8242;
+
+    --s-xs:4px; --s-sm:8px; --s-md:16px; --s-lg:24px; --s-xl:32px; --s-xxl:48px;
+    --r-md:14px; --r-lg:22px; --r-xl:30px; --r-full:9999px;
+
+    --font-display: 'Fredoka', system-ui, sans-serif;
+    --font: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  }
+
+  * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+  body {
+    margin: 0; font-family: var(--font); color: var(--ink);
+    background:
+      radial-gradient(900px 500px at 80% -10%, rgba(157,78,221,.45), transparent 60%),
+      radial-gradient(700px 500px at 0% 20%, rgba(255,46,147,.30), transparent 55%),
+      linear-gradient(160deg, var(--bg-0), var(--bg-1));
+    background-attachment: fixed;
+    min-height: 100vh;
+  }
+  h1,h2,h3,.display,.btn3d,.nav button,.caption { font-family: var(--font-display); }
+
+  /* page chrome */
+  .topbar {
+    position: sticky; top: 0; z-index: 50;
+    display: flex; align-items: center; gap: var(--s-md);
+    padding: var(--s-md) var(--s-lg);
+    background: rgba(12,7,32,.7); backdrop-filter: blur(12px);
+    border-bottom: 1px solid var(--glass-line);
+  }
+  .logo { font-family: var(--font-display); font-weight: 700; font-size: 22px; letter-spacing: .5px;
+    background: linear-gradient(90deg, var(--pink), var(--gold)); -webkit-background-clip: text; background-clip: text; color: transparent;
+    text-shadow: 0 0 24px rgba(255,46,147,.4); }
+  .topbar .sub { color: var(--ink-dim); font-size: 12px; }
+  .spacer { flex: 1; }
+  .nav { display: flex; gap: 4px; background: var(--glass); padding: 4px; border-radius: var(--r-full); border: 1px solid var(--glass-line); }
+  .nav button { border: 0; background: transparent; color: var(--ink-dim); padding: 8px 16px; border-radius: var(--r-full); font-weight: 600; font-size: 14px; cursor: pointer; }
+  .nav button.active { background: linear-gradient(180deg, var(--pink), var(--pink-dk)); color: #fff; box-shadow: 0 0 18px rgba(255,46,147,.5); }
+  .linkbtn { color: var(--cyan); text-decoration: none; font-size: 13px; font-weight: 700; border: 1px solid var(--glass-line); padding: 8px 14px; border-radius: var(--r-full); }
+
+  main { padding: var(--s-xl) var(--s-lg) 90px; max-width: 1280px; margin: 0 auto; }
+  .panel { display: none; }
+  .panel.active { display: block; }
+  .section-title { font-family: var(--font-display); font-size: 24px; font-weight: 700; margin: var(--s-xl) 0 4px; }
+  .section-note { color: var(--ink-dim); font-size: 14px; margin: 0 0 var(--s-md); max-width: 72ch; }
+  .group { background: var(--glass); border: 1px solid var(--glass-line); border-radius: var(--r-lg); padding: var(--s-lg); margin-bottom: var(--s-md); }
+  .group h3 { margin: 0 0 4px; font-size: 16px; }
+  .group .desc { color: var(--ink-dim); font-size: 13px; margin: 0 0 var(--s-md); }
+  .row { display: flex; flex-direction: row; flex-wrap: wrap; gap: var(--s-md); align-items: flex-start; }
+  .stack { display: flex; flex-direction: column; gap: var(--s-sm); }
+  .between { display: flex; flex-direction: row; align-items: center; justify-content: space-between; }
+  .pill-label { font-size: 11px; color: var(--ink-dim); text-align: center; margin-top: 6px; }
+
+  /* token swatches */
+  .swatch { width: 92px; }
+  .swatch .chip { height: 54px; border-radius: var(--r-md); border: 1px solid var(--glass-line); }
+  .swatch .name { font-size: 12px; font-weight: 600; margin-top: 6px; }
+
+  /* ===================== TYPE ===================== */
+  .display { font-size: 46px; line-height: 1.05; font-weight: 700; }
+  .glow { text-shadow: 0 0 22px currentColor; }
+  .t-timer { font-family: var(--font-display); font-size: 52px; font-weight: 700; font-variant-numeric: tabular-nums; }
+  .t-title { font-family: var(--font-display); font-size: 26px; font-weight: 700; }
+  .t-heading { font-family: var(--font-display); font-size: 19px; font-weight: 600; }
+  .t-body { font-size: 15px; line-height: 1.4; }
+  .t-cap { font-size: 12px; }
+  .dim { color: var(--ink-dim); }
+
+  /* ===================== CHUNKY 3D BUTTON ===================== */
+  .btn3d {
+    position: relative; border: 0; cursor: pointer; color: #fff;
+    font-family: var(--font-display); font-weight: 700; font-size: 18px;
+    padding: 15px 26px; border-radius: var(--r-lg);
+    background: linear-gradient(180deg, var(--purple), var(--purple-dk));
+    box-shadow: 0 6px 0 var(--purple-dk), 0 12px 22px rgba(0,0,0,.4);
+    transition: transform .08s ease, box-shadow .08s ease;
+  }
+  .btn3d:active { transform: translateY(5px); box-shadow: 0 1px 0 var(--purple-dk), 0 4px 12px rgba(0,0,0,.4); }
+  .btn3d--pink   { background: linear-gradient(180deg, #FF63AC, var(--pink)); box-shadow: 0 6px 0 var(--pink-dk), 0 12px 22px rgba(0,0,0,.4); }
+  .btn3d--pink:active { box-shadow: 0 1px 0 var(--pink-dk), 0 4px 12px rgba(0,0,0,.4); }
+  .btn3d--lime   { background: linear-gradient(180deg, #69F08F, var(--lime)); color:#073D17; box-shadow: 0 6px 0 var(--lime-dk), 0 12px 22px rgba(0,0,0,.4); }
+  .btn3d--lime:active { box-shadow: 0 1px 0 var(--lime-dk), 0 4px 12px rgba(0,0,0,.4); }
+  .btn3d--amber  { background: linear-gradient(180deg, #FFC859, var(--amber)); color:#3D2A00; box-shadow: 0 6px 0 var(--amber-dk), 0 12px 22px rgba(0,0,0,.4); }
+  .btn3d--amber:active { box-shadow: 0 1px 0 var(--amber-dk), 0 4px 12px rgba(0,0,0,.4); }
+  .btn3d--ghost  { background: var(--glass); box-shadow: 0 4px 0 rgba(0,0,0,.3); border: 1px solid var(--glass-line); }
+  .btn3d--block { width: 100%; display: block; }
+  .btn3d--xl { font-size: 22px; padding: 19px 28px; }
+
+  /* ===================== NEON CHIP / BADGE ===================== */
+  .chip { display: inline-flex; align-items: center; gap: 6px; padding: 7px 14px; border-radius: var(--r-full); font-weight: 700; font-size: 13px; border: 1px solid var(--glass-line); background: var(--glass); }
+  .chip--lime { color: var(--lime); border-color: rgba(56,230,107,.4); box-shadow: 0 0 14px rgba(56,230,107,.25); }
+  .chip--amber { color: var(--amber); border-color: rgba(255,176,32,.4); box-shadow: 0 0 14px rgba(255,176,32,.25); }
+  .chip--red { color: var(--red); border-color: rgba(255,77,109,.4); box-shadow: 0 0 14px rgba(255,77,109,.25); }
+  .chip--cyan { color: var(--cyan); border-color: rgba(33,230,230,.4); box-shadow: 0 0 14px rgba(33,230,230,.25); }
+  .score-pill { display: inline-flex; align-items: center; gap: 6px; padding: 8px 16px; border-radius: var(--r-full); font-family: var(--font-display); font-weight: 700; font-size: 18px;
+    background: linear-gradient(180deg, var(--card-2), var(--card)); border: 1px solid var(--glass-line); }
+
+  /* ===================== COMBO FLAME ===================== */
+  .combo { display: inline-flex; align-items: center; gap: 8px; padding: 8px 16px; border-radius: var(--r-full);
+    background: linear-gradient(90deg, var(--amber), var(--pink)); color: #fff; font-family: var(--font-display); font-weight: 700;
+    box-shadow: 0 0 22px rgba(255,77,109,.55); animation: pop 1.1s ease-in-out infinite; }
+  @keyframes pop { 0%,100%{ transform: scale(1);} 50%{ transform: scale(1.07);} }
+  .flame { animation: flick .5s ease-in-out infinite alternate; }
+  @keyframes flick { from{ transform: rotate(-6deg) scale(1);} to{ transform: rotate(6deg) scale(1.15);} }
+
+  /* ===================== POWER-UPS ===================== */
+  .powerups { display: flex; gap: var(--s-sm); }
+  .pwr { width: 52px; height: 52px; border-radius: var(--r-md); display: flex; flex-direction: column; align-items: center; justify-content: center;
+    background: var(--glass); border: 1px solid var(--glass-line); font-size: 20px; position: relative; }
+  .pwr .cnt { position: absolute; top: -6px; right: -6px; background: var(--pink); color: #fff; font-size: 10px; font-weight: 800; border-radius: var(--r-full); padding: 1px 6px; }
+
+  /* ===================== TIMER RING ===================== */
+  .ring { position: relative; width: 138px; height: 138px; border-radius: var(--r-full); display: flex; align-items: center; justify-content: center;
+    background: conic-gradient(var(--cyan) calc(var(--p,70)*1%), rgba(255,255,255,.08) 0);
+    box-shadow: 0 0 30px rgba(33,230,230,.5); animation: ringpulse 2s ease-in-out infinite; }
+  .ring::before { content:""; position: absolute; width: 112px; height: 112px; border-radius: var(--r-full); background: var(--bg-1); }
+  .ring .num { position: relative; color: var(--cyan); }
+  .ring.danger { background: conic-gradient(var(--red) calc(var(--p,15)*1%), rgba(255,77,109,.12) 0); box-shadow: 0 0 34px rgba(255,77,109,.65); animation: ringpulse .7s ease-in-out infinite; }
+  .ring.danger .num { color: var(--red); }
+  @keyframes ringpulse { 0%,100%{ transform: scale(1);} 50%{ transform: scale(1.04);} }
+
+  /* ===================== WORD CARD ===================== */
+  .word-card { width: 100%; border-radius: var(--r-xl); padding: var(--s-xl) var(--s-lg);
+    background: linear-gradient(180deg, var(--card-2), var(--card)); border: 1px solid var(--glass-line);
+    box-shadow: 0 18px 40px rgba(0,0,0,.45), inset 0 0 30px rgba(157,78,221,.2);
+    display: flex; flex-direction: column; align-items: center; gap: var(--s-md); animation: float 3.5s ease-in-out infinite; }
+  @keyframes float { 0%,100%{ transform: translateY(0);} 50%{ transform: translateY(-6px);} }
+  .word-card .word { text-align: center; }
+  .taboo { display: flex; flex-direction: column; align-items: center; gap: 4px; padding-top: var(--s-sm); border-top: 1px dashed rgba(255,255,255,.18); width: 100%; }
+  .taboo .lab { font-size: 10px; font-weight: 800; letter-spacing: .1em; color: var(--red); }
+  .taboo .w { color: var(--ink-dim); text-decoration: line-through; }
+
+  /* golden word */
+  .word-card.golden { background: linear-gradient(120deg, #FFE680, var(--gold) 45%, #FFB020); border-color: var(--gold);
+    box-shadow: 0 18px 44px rgba(255,210,63,.5), inset 0 0 40px rgba(255,255,255,.5); }
+  .word-card.golden .word { color: #5A3D00; }
+  .word-card.golden::after { content:""; position: absolute; }
+  .shine { position: relative; overflow: hidden; }
+  .shine::before { content:""; position: absolute; top:0; left:-60%; width: 40%; height: 100%;
+    background: linear-gradient(100deg, transparent, rgba(255,255,255,.7), transparent); transform: skewX(-20deg);
+    animation: sweep 2.4s linear infinite; }
+  @keyframes sweep { 0%{ left:-60%;} 60%,100%{ left:130%;} }
+
+  /* ===================== ACTION BAR ===================== */
+  .action-bar { display: flex; flex-direction: row; gap: var(--s-md); width: 100%; }
+  .action { flex: 1; min-height: 92px; border: 0; cursor: pointer; border-radius: var(--r-lg);
+    display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px;
+    font-family: var(--font-display); font-weight: 700; font-size: 18px; color: #fff;
+    transition: transform .08s, box-shadow .08s; }
+  .action:active { transform: translateY(5px); }
+  .action .ico { font-size: 28px; }
+  .action--correct { background: linear-gradient(180deg, #69F08F, var(--lime)); color: #073D17; box-shadow: 0 6px 0 var(--lime-dk), 0 0 24px rgba(56,230,107,.45); }
+  .action--correct:active { box-shadow: 0 1px 0 var(--lime-dk); }
+  .action--skip { background: linear-gradient(180deg, #FFC859, var(--amber)); color: #3D2A00; box-shadow: 0 6px 0 var(--amber-dk), 0 0 24px rgba(255,176,32,.4); }
+  .action--skip:active { box-shadow: 0 1px 0 var(--amber-dk); }
+  .action--foul { flex: 0 0 92px; background: linear-gradient(180deg, #FF7088, var(--red)); box-shadow: 0 6px 0 var(--red-dk), 0 0 24px rgba(255,77,109,.4); }
+  .action--foul:active { box-shadow: 0 1px 0 var(--red-dk); }
+
+  /* score pop */
+  .pop { position: absolute; right: 20px; top: 64px; font-family: var(--font-display); font-weight: 700; font-size: 26px; color: var(--lime);
+    text-shadow: 0 0 16px rgba(56,230,107,.7); animation: floatup 1.6s ease-out infinite; }
+  @keyframes floatup { 0%{ opacity: 0; transform: translateY(8px);} 25%{ opacity: 1;} 100%{ opacity: 0; transform: translateY(-26px);} }
+
+  /* team row / stat / scoreboard */
+  .team-row { display: flex; align-items: center; gap: var(--s-sm); }
+  .dot { width: 30px; height: 30px; border-radius: var(--r-full); flex: 0 0 auto; box-shadow: 0 0 14px currentColor; }
+  .input { width: 100%; min-height: 48px; padding: 0 var(--s-md); background: rgba(0,0,0,.25); border: 1.5px solid var(--glass-line); border-radius: var(--r-md); color: var(--ink); font-size: 16px; font-family: var(--font); }
+  .input::placeholder { color: var(--ink-dim); }
+  .stat { flex: 1; border-radius: var(--r-lg); padding: var(--s-md); text-align: center; background: var(--glass); border: 1px solid var(--glass-line); }
+  .stat .n { font-family: var(--font-display); font-size: 32px; font-weight: 700; }
+  .stat .l { font-size: 12px; color: var(--ink-dim); }
+  .sb-row { display: flex; align-items: center; gap: var(--s-md); padding: var(--s-md); border-radius: var(--r-lg); background: var(--glass); border: 1px solid var(--glass-line); }
+  .sb-row.win { background: linear-gradient(90deg, rgba(255,210,63,.25), var(--glass)); border-color: var(--gold); box-shadow: 0 0 26px rgba(255,210,63,.3); }
+  .medal { font-size: 22px; width: 30px; text-align: center; }
+  .sb-row .nm { flex: 1; font-family: var(--font-display); font-weight: 600; }
+  .sb-row .pt { font-family: var(--font-display); font-weight: 700; font-size: 20px; }
+
+  /* stepper + segmented + slider + switch (arcade) */
+  .stepper { display: inline-flex; align-items: center; gap: var(--s-sm); }
+  .stepper button { width: 40px; height: 40px; border-radius: var(--r-full); border: 1px solid var(--glass-line); background: var(--glass); color: #fff; font-size: 20px; font-weight: 800; cursor: pointer; }
+  .stepper .v { min-width: 46px; text-align: center; font-family: var(--font-display); font-weight: 700; font-size: 18px; }
+  .seg { display: inline-flex; background: rgba(0,0,0,.25); padding: 4px; border-radius: var(--r-md); gap: 4px; border: 1px solid var(--glass-line); }
+  .seg div { padding: 10px 16px; border-radius: var(--r-md); font-weight: 600; font-size: 14px; color: var(--ink-dim); cursor: pointer; }
+  .seg div.on { background: linear-gradient(180deg, var(--purple), var(--purple-dk)); color: #fff; box-shadow: 0 0 16px rgba(157,78,221,.5); }
+  .slider { width: 100%; }
+  .slider .track { height: 8px; border-radius: var(--r-full); background: rgba(0,0,0,.3); position: relative; }
+  .slider .fill { position: absolute; left:0; top:0; bottom:0; border-radius: var(--r-full); background: linear-gradient(90deg, var(--cyan), var(--pink)); box-shadow: 0 0 12px rgba(33,230,230,.6); }
+  .slider .thumb { position: absolute; top: 50%; width: 26px; height: 26px; border-radius: var(--r-full); background: #fff; transform: translate(-50%,-50%); box-shadow: 0 0 14px rgba(255,255,255,.8); }
+  .switch { width: 54px; height: 32px; border-radius: var(--r-full); background: rgba(0,0,0,.3); position: relative; cursor: pointer; border: 1px solid var(--glass-line); }
+  .switch .knob { position: absolute; top: 3px; left: 3px; width: 26px; height: 26px; border-radius: var(--r-full); background: #fff; transition: left .2s; }
+  .switch.on { background: linear-gradient(90deg, var(--cyan), var(--lime)); }
+  .switch.on .knob { left: 25px; }
+
+  /* streak / coins meta */
+  .meta-pill { display: inline-flex; align-items: center; gap: 6px; padding: 6px 12px; border-radius: var(--r-full); background: var(--glass); border: 1px solid var(--glass-line); font-weight: 700; font-size: 13px; }
+
+  /* confetti */
+  .confetti-area { position: absolute; inset: 0; overflow: hidden; pointer-events: none; }
+  .conf { position: absolute; top: -16px; width: 9px; height: 14px; border-radius: 2px; opacity: .9; animation: fall linear infinite; }
+  @keyframes fall { 0%{ transform: translateY(-20px) rotate(0);} 100%{ transform: translateY(760px) rotate(540deg);} }
+
+  /* ===================== PHONE FRAME ===================== */
+  .phones { display: flex; flex-direction: row; flex-wrap: wrap; gap: var(--s-xl); }
+  .phone-wrap { display: flex; flex-direction: column; align-items: center; gap: var(--s-sm); }
+  .phone-wrap .caption { font-size: 13px; font-weight: 700; }
+  .phone { width: 360px; height: 740px; background: #050309; border-radius: 46px; padding: 10px; box-shadow: 0 24px 60px rgba(0,0,0,.6); flex: 0 0 auto; }
+  .screen { width: 100%; height: 100%; border-radius: 38px; overflow: hidden; display: flex; flex-direction: column; position: relative;
+    background: radial-gradient(600px 400px at 80% -10%, rgba(157,78,221,.4), transparent 60%), linear-gradient(160deg, var(--bg-0), var(--bg-1)); }
+  .statusbar { height: 30px; flex: 0 0 auto; display: flex; align-items: center; justify-content: space-between; padding: 0 22px; font-size: 12px; font-weight: 700; color: var(--ink-dim); }
+  .notch { position: absolute; top: 8px; left: 50%; transform: translateX(-50%); width: 110px; height: 22px; background: #050309; border-radius: var(--r-full); z-index: 5; }
+  .sbody { flex: 1; display: flex; flex-direction: column; padding: var(--s-md) var(--s-md) 0; overflow: hidden; }
+  .sscroll { flex: 1; overflow-y: auto; display: flex; flex-direction: column; gap: var(--s-md); padding-bottom: var(--s-md); }
+  .footer { padding: var(--s-md); }
+  .center { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: var(--s-lg); }
+  .form-h { font-family: var(--font-display); font-size: 13px; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; color: var(--ink-dim); margin-bottom: 6px; }
+
+  /* ===================== LANGUAGE ONBOARDING (arcade) ===================== */
+  /* LanguageRow — extends .sb-row: neon flag + endonym + sub + trailing affordance. */
+  .lang-flag { font-size: 26px; line-height: 1; flex: 0 0 auto; width: 32px; text-align: center; filter: drop-shadow(0 0 8px rgba(255,255,255,.2)); }
+  .lang-name { flex: 1; font-family: var(--font-display); font-weight: 700; font-size: 16px; }
+  .lang-name .sub { font-family: var(--font); font-size: 12px; line-height: 16px; font-weight: 400; color: var(--ink-dim); margin-top: 1px; }
+  /* selected row → cyan neon ring + glow (distinct from the gold .win winner highlight) */
+  .sb-row.selected { background: linear-gradient(90deg, rgba(33,230,230,.18), var(--glass)); border-color: var(--cyan); box-shadow: inset 0 0 0 1px rgba(33,230,230,.5), 0 0 22px rgba(33,230,230,.28); }
+
+  /* RadioCheck — the selected-state indicator, candy-neon when on */
+  .radio { width: 26px; height: 26px; border-radius: var(--r-full); flex: 0 0 auto;
+    border: 2px solid var(--glass-line); background: rgba(0,0,0,.25);
+    display: inline-flex; align-items: center; justify-content: center;
+    color: transparent; font-size: 14px; font-weight: 800; }
+  .radio.on { background: linear-gradient(180deg, var(--cyan), var(--cyan-dk)); border-color: var(--cyan); color: #06231f; box-shadow: 0 0 16px rgba(33,230,230,.6); }
+
+  /* DownloadControl — three offline states share one trailing slot. */
+  /* 1) not-downloaded → pushable mini 3D button + size label */
+  .dl-btn { display: inline-flex; align-items: center; gap: 6px; flex: 0 0 auto; cursor: pointer;
+    min-height: 34px; padding: 0 14px; border-radius: var(--r-full); border: 0;
+    font-family: var(--font-display); font-size: 13px; font-weight: 700; color: #fff; white-space: nowrap;
+    background: linear-gradient(180deg, var(--purple), var(--purple-dk));
+    box-shadow: 0 4px 0 var(--purple-dk), 0 6px 14px rgba(0,0,0,.4); transition: transform .08s, box-shadow .08s; }
+  .dl-btn:active { transform: translateY(3px); box-shadow: 0 1px 0 var(--purple-dk), 0 3px 8px rgba(0,0,0,.4); }
+  .dl-size { font-family: var(--font-display); font-size: 11px; color: var(--ink-dim); font-weight: 700; margin-top: 4px; text-align: right; }
+  /* 2) downloading → small determinate neon ring + % (mirrors the arcade .ring trick) */
+  .dl-progress { display: inline-flex; align-items: center; gap: var(--s-sm); flex: 0 0 auto; }
+  .dl-ring { position: relative; width: 34px; height: 34px; border-radius: var(--r-full); flex: 0 0 auto;
+    display: flex; align-items: center; justify-content: center;
+    background: conic-gradient(var(--cyan) calc(var(--p,40)*1%), rgba(255,255,255,.08) 0);
+    box-shadow: 0 0 16px rgba(33,230,230,.45); }
+  .dl-ring::before { content: ""; position: absolute; width: 24px; height: 24px; border-radius: var(--r-full); background: var(--bg-1); }
+  .dl-ring .pct { position: relative; font-family: var(--font-display); font-size: 9px; font-weight: 800; color: var(--cyan); }
+  /* 3) downloaded → affirmative "Available offline" neon-lime badge (reuses .chip palette) */
+  .badge-offline { display: inline-flex; align-items: center; gap: 6px; flex: 0 0 auto;
+    padding: 6px 12px; border-radius: var(--r-full); white-space: nowrap;
+    font-family: var(--font-display); font-size: 12px; font-weight: 700;
+    color: var(--lime); border: 1px solid rgba(56,230,107,.4); background: var(--glass); box-shadow: 0 0 14px rgba(56,230,107,.22); }
+
+  /* NoteCallout — soft helper note (offline-download rationale) */
+  .note { display: flex; flex-direction: row; gap: var(--s-sm); align-items: flex-start;
+    background: var(--glass); border: 1px solid var(--glass-line); border-radius: var(--r-lg); padding: var(--s-md); }
+  .note .ico { font-size: 18px; line-height: 1.2; flex: 0 0 auto; }
+  .note .txt { font-size: 13px; line-height: 18px; color: var(--ink-dim); }
+
+  /* SettingsRow — tappable "Change language" row: icon + label + value + chevron */
+  .settings-row { display: flex; flex-direction: row; align-items: center; gap: var(--s-md); cursor: pointer;
+    padding: var(--s-md); border-radius: var(--r-lg); background: var(--glass); border: 1px solid var(--glass-line); }
+  .settings-row .ico { font-size: 22px; flex: 0 0 auto; }
+  .settings-row .label { flex: 1; font-family: var(--font-display); font-weight: 700; font-size: 16px; }
+  .settings-row .value { color: var(--cyan); font-family: var(--font-display); font-weight: 700; font-size: 15px; }
+  .settings-row .chev { color: var(--ink-dim); font-size: 18px; flex: 0 0 auto; }
+
+  /* BottomSheet — slides up over a dimmed screen; hugs the bottom edge of the frame */
+  .sheet-overlay { position: absolute; inset: 0; background: rgba(8,5,20,.62); backdrop-filter: blur(3px);
+    display: flex; flex-direction: column; justify-content: flex-end; z-index: 10; }
+  .sheet { background: linear-gradient(180deg, var(--card-2), var(--card));
+    border-top-left-radius: var(--r-xl); border-top-right-radius: var(--r-xl);
+    border-top: 1px solid var(--glass-line); box-shadow: 0 -18px 50px rgba(0,0,0,.6), inset 0 1px 0 rgba(255,255,255,.06);
+    display: flex; flex-direction: column; max-height: 86%; padding: var(--s-sm) 0 0; }
+  .sheet-grabber { width: 44px; height: 5px; border-radius: var(--r-full); background: var(--glass-line); align-self: center; margin: var(--s-xs) 0 var(--s-sm); flex: 0 0 auto; }
+  .sheet-head { display: flex; flex-direction: row; align-items: center; justify-content: space-between; padding: 0 var(--s-md) var(--s-sm); flex: 0 0 auto; }
+  .sheet-body { overflow-y: auto; display: flex; flex-direction: column; gap: var(--s-md); padding: 0 var(--s-md) var(--s-sm); }
+  .sheet-footer { padding: var(--s-md); flex: 0 0 auto; }
+
+  /* SecondaryPicker — optional bilingual secondary slot. Empty = dashed add;
+     chosen = dotted accent ring so primary vs optional reads at a glance. */
+  .secondary-add { display: flex; flex-direction: row; align-items: center; gap: var(--s-sm); cursor: pointer;
+    min-height: 52px; padding: var(--s-md); border-radius: var(--r-lg); width: 100%;
+    border: 1.5px dashed var(--glass-line); background: rgba(0,0,0,.18);
+    font-family: var(--font-display); color: var(--ink-dim); font-weight: 700; font-size: 15px; }
+  .secondary-add .plus { font-size: 20px; color: var(--cyan); }
+  .sb-row.secondary { background: linear-gradient(90deg, rgba(157,78,221,.18), var(--glass)); border-style: dashed; border-color: var(--purple); box-shadow: 0 0 18px rgba(157,78,221,.22); }
+  .tag-role { font-family: var(--font-display); font-size: 10px; font-weight: 800; letter-spacing: .06em; text-transform: uppercase; padding: 3px 9px; border-radius: var(--r-full); flex: 0 0 auto; }
+  .tag-role--primary { background: linear-gradient(180deg, var(--cyan), var(--cyan-dk)); color: #06231f; box-shadow: 0 0 14px rgba(33,230,230,.5); }
+  .tag-role--secondary { background: var(--glass); color: var(--purple); border: 1px solid var(--purple); }
+</style>
+</head>
+<body>
+  <div class="topbar">
+    <div>
+      <div class="logo">★ ALIAS</div>
+      <div class="sub">Arcade style · bold / juicy / addictive</div>
+    </div>
+    <div class="spacer"></div>
+    <div class="nav">
+      <button data-panel="tokens" class="active">Tokens</button>
+      <button data-panel="components">Components</button>
+      <button data-panel="screens">Screens</button>
+    </div>
+    <a class="linkbtn" href="index.html">Refined</a>
+    <a class="linkbtn" href="vivid.html">Vivid</a>
+  </div>
+
+  <main>
+    <!-- ============== TOKENS ============== -->
+    <section class="panel active" id="tokens">
+      <div class="section-title">Arcade palette</div>
+      <p class="section-note">Dark-first, candy-neon. Glow comes from layered shadows; gradients ship via <b>expo-linear-gradient</b>. Same token <i>names</i> as the refined system so screens stay swappable — only the values change.</p>
+
+      <div class="group">
+        <h3>Surfaces & neon accents</h3>
+        <div class="row">
+          <div class="swatch"><div class="chip" style="background:var(--card)"></div><div class="name">card</div></div>
+          <div class="swatch"><div class="chip" style="background:var(--glass)"></div><div class="name">glass</div></div>
+          <div class="swatch"><div class="chip" style="background:var(--pink)"></div><div class="name">pink</div></div>
+          <div class="swatch"><div class="chip" style="background:var(--purple)"></div><div class="name">purple</div></div>
+          <div class="swatch"><div class="chip" style="background:var(--cyan)"></div><div class="name">cyan</div></div>
+          <div class="swatch"><div class="chip" style="background:var(--lime)"></div><div class="name">lime · correct</div></div>
+          <div class="swatch"><div class="chip" style="background:var(--amber)"></div><div class="name">amber · skip</div></div>
+          <div class="swatch"><div class="chip" style="background:var(--red)"></div><div class="name">red · foul</div></div>
+          <div class="swatch"><div class="chip" style="background:var(--gold)"></div><div class="name">gold</div></div>
+        </div>
+      </div>
+
+      <div class="group">
+        <h3>Team palette (neon, 1–8)</h3>
+        <div class="row">
+          <div class="swatch"><div class="chip" style="background:var(--team-1)"></div><div class="name">team 1</div></div>
+          <div class="swatch"><div class="chip" style="background:var(--team-2)"></div><div class="name">team 2</div></div>
+          <div class="swatch"><div class="chip" style="background:var(--team-3)"></div><div class="name">team 3</div></div>
+          <div class="swatch"><div class="chip" style="background:var(--team-4)"></div><div class="name">team 4</div></div>
+          <div class="swatch"><div class="chip" style="background:var(--team-5)"></div><div class="name">team 5</div></div>
+          <div class="swatch"><div class="chip" style="background:var(--team-6)"></div><div class="name">team 6</div></div>
+          <div class="swatch"><div class="chip" style="background:var(--team-7)"></div><div class="name">team 7</div></div>
+          <div class="swatch"><div class="chip" style="background:var(--team-8)"></div><div class="name">team 8</div></div>
+        </div>
+      </div>
+
+      <div class="group">
+        <h3>Type — Fredoka display + system body</h3>
+        <div class="stack" style="gap:var(--s-md)">
+          <div class="display glow" style="color:var(--pink)">Lighthouse</div>
+          <div class="t-timer glow" style="color:var(--cyan)">0:38</div>
+          <div class="t-title">Round complete!</div>
+          <div class="t-heading dim">Pass the phone to…</div>
+          <div class="t-body">Body copy uses a clean system font for legibility.</div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ============== COMPONENTS ============== -->
+    <section class="panel" id="components">
+      <div class="section-title">Juicy components</div>
+      <p class="section-note">The signature pieces that make it feel like a game: pushable 3D buttons, combo flame, Golden Word, power-ups, animated timer.</p>
+
+      <div class="group">
+        <h3>Pushable 3D buttons <span class="dim t-cap">(press them)</span></h3>
+        <div class="row" style="align-items:center">
+          <button class="btn3d">Play</button>
+          <button class="btn3d btn3d--pink">Start Round</button>
+          <button class="btn3d btn3d--lime">Continue</button>
+          <button class="btn3d btn3d--amber">Restart</button>
+          <button class="btn3d btn3d--ghost">Settings</button>
+        </div>
+      </div>
+
+      <div class="row">
+        <div class="group" style="flex:1; min-width:300px">
+          <h3>Combo · Power-ups · meta</h3>
+          <div class="stack" style="gap:var(--s-md)">
+            <div class="row" style="align-items:center">
+              <div class="combo"><span class="flame">🔥</span> ×3 COMBO</div>
+              <span class="chip chip--cyan">⚡ Golden in 2</span>
+            </div>
+            <div class="powerups">
+              <div class="pwr">⚡<div class="cnt">2</div></div>
+              <div class="pwr">×2<div class="cnt">1</div></div>
+              <div class="pwr">🛡<div class="cnt">1</div></div>
+              <div class="pwr">❄️<div class="cnt">3</div></div>
+            </div>
+            <div class="row">
+              <span class="meta-pill">🔥 5-day streak</span>
+              <span class="meta-pill">🪙 1,240</span>
+              <span class="meta-pill">🏅 Lvl 7</span>
+            </div>
+          </div>
+        </div>
+        <div class="group" style="flex:0 0 auto">
+          <h3>Timer</h3>
+          <div class="row" style="align-items:center">
+            <div class="stack" style="align-items:center"><div class="ring" style="--p:64"><span class="num t-timer" style="font-size:30px">0:38</span></div><div class="pill-label">running</div></div>
+            <div class="stack" style="align-items:center"><div class="ring danger" style="--p:18"><span class="num t-timer" style="font-size:30px">0:07</span></div><div class="pill-label">last 10s</div></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="row">
+        <div class="group" style="flex:1; min-width:280px">
+          <h3>WordCard — normal</h3>
+          <div class="word-card"><div class="word display glow" style="color:#fff">Volcano</div></div>
+        </div>
+        <div class="group" style="flex:1; min-width:280px">
+          <h3>WordCard — Golden Word ✨</h3>
+          <div class="word-card golden shine"><div class="word display">Treasure</div><div class="chip chip--amber" style="background:rgba(255,255,255,.4)">×2 bonus</div></div>
+        </div>
+        <div class="group" style="flex:1; min-width:280px">
+          <h3>WordCard — Taboo</h3>
+          <div class="word-card"><div class="word display glow" style="color:#fff; font-size:38px">Coffee</div>
+            <div class="taboo"><div class="lab">DON'T SAY</div><span class="w">drink</span><span class="w">caffeine</span><span class="w">morning</span></div></div>
+        </div>
+      </div>
+
+      <div class="group">
+        <h3>ActionButtonBar</h3>
+        <div class="action-bar">
+          <button class="action action--correct"><span class="ico">✓</span>Correct</button>
+          <button class="action action--skip"><span class="ico">↪</span>Skip</button>
+          <button class="action action--foul"><span class="ico">⚑</span></button>
+        </div>
+      </div>
+
+      <div class="row">
+        <div class="group" style="flex:1; min-width:300px">
+          <h3>Inputs · controls</h3>
+          <div class="stack" style="gap:var(--s-md)">
+            <div class="team-row"><div class="dot" style="background:var(--team-1); color:var(--team-1)"></div><input class="input" value="Red Rockets" /></div>
+            <div class="between"><span class="t-body">Game mode</span><div class="seg"><div class="on">Time</div><div>Max</div></div></div>
+            <div class="between"><span class="t-body">Duration</span><div class="stepper"><button>−</button><span class="v">60s</span><button>+</button></div></div>
+            <div class="slider"><div class="track"><div class="fill" style="width:45%"></div><div class="thumb" style="left:45%"></div></div></div>
+            <div class="between"><span class="t-body">Sound FX</span><div class="switch on"><div class="knob"></div></div></div>
+          </div>
+        </div>
+        <div class="group" style="flex:1; min-width:300px">
+          <h3>Stats · Scoreboard</h3>
+          <div class="stack" style="gap:var(--s-md)">
+            <div class="row" style="gap:var(--s-sm)">
+              <div class="stat"><div class="n" style="color:var(--lime)">7</div><div class="l">Correct</div></div>
+              <div class="stat"><div class="n" style="color:var(--amber)">2</div><div class="l">Skipped</div></div>
+              <div class="stat"><div class="n" style="color:var(--red)">1</div><div class="l">Fouls</div></div>
+            </div>
+            <div class="sb-row win"><span class="medal">🥇</span><div class="dot" style="background:var(--team-1); color:var(--team-1)"></div><div class="nm">Red Rockets</div><div class="pt">18</div></div>
+            <div class="sb-row"><span class="medal">🥈</span><div class="dot" style="background:var(--team-2); color:var(--team-2)"></div><div class="nm">Blue Bolts</div><div class="pt">14</div></div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ============== SCREENS ============== -->
+    <section class="panel" id="screens">
+      <div class="section-title">Screens</div>
+      <p class="section-note">Home → Setup → Game → Round Result → Winner. Same flow as the spec, dialed up for fun.</p>
+      <div class="phones">
+
+        <!-- HOME -->
+        <div class="phone-wrap">
+          <div class="phone"><div class="screen"><div class="notch"></div>
+            <div class="statusbar"><span>9:41</span><span>▮▮▮ 100%</span></div>
+            <div class="sbody">
+              <div class="between"><span class="meta-pill">🔥 5-day streak</span><div class="row" style="gap:6px"><span class="meta-pill">🪙 1,240</span><span class="meta-pill">👤</span></div></div>
+              <div class="center" style="gap:var(--s-md)">
+                <div class="display glow" style="font-size:60px; background:linear-gradient(90deg,var(--pink),var(--gold)); -webkit-background-clip:text; background-clip:text; color:transparent">ALIAS</div>
+                <div class="t-heading dim" style="margin-top:-12px">the party word game</div>
+                <button class="btn3d btn3d--pink btn3d--xl btn3d--block" style="max-width:240px">▶  PLAY</button>
+                <div class="row" style="justify-content:center; width:100%; max-width:280px; gap:var(--s-sm)">
+                  <button class="btn3d btn3d--ghost" style="flex:1; padding:12px 10px; font-size:15px">📚 Packs</button>
+                  <button class="btn3d btn3d--ghost" style="flex:1; padding:12px 10px; font-size:15px">✨ Create</button>
+                </div>
+                <div class="row" style="justify-content:center; width:100%; max-width:280px; gap:var(--s-sm)">
+                  <button class="btn3d btn3d--ghost" style="flex:1; padding:12px 10px; font-size:15px">🌐 Discover</button>
+                  <button class="btn3d btn3d--ghost" style="flex:1; padding:12px 10px; font-size:15px">❔ Rules</button>
+                  <button class="btn3d btn3d--ghost" style="flex:1; padding:12px 10px; font-size:15px">⚙</button>
+                </div>
+              </div>
+            </div>
+          </div></div>
+          <div class="caption">0 · Home</div>
+        </div>
+
+        <!-- SETUP -->
+        <div class="phone-wrap">
+          <div class="phone"><div class="screen"><div class="notch"></div>
+            <div class="statusbar"><span>9:41</span><span>▮▮▮ 100%</span></div>
+            <div class="sbody">
+              <div class="t-title" style="margin-bottom:var(--s-sm)">New Game</div>
+              <div class="sscroll">
+                <div>
+                  <div class="form-h">Teams</div>
+                  <div class="stack">
+                    <div class="team-row"><div class="dot" style="background:var(--team-1);color:var(--team-1)"></div><input class="input" value="Red Rockets" /></div>
+                    <div class="team-row"><div class="dot" style="background:var(--team-2);color:var(--team-2)"></div><input class="input" value="Blue Bolts" /></div>
+                    <button class="btn3d btn3d--ghost btn3d--block">＋ Add team</button>
+                  </div>
+                </div>
+                <div>
+                  <div class="form-h">Mode</div>
+                  <div class="seg" style="display:flex"><div class="on" style="flex:1;text-align:center">Time Score</div><div style="flex:1;text-align:center">Max Score</div></div>
+                </div>
+                <div>
+                  <div class="form-h">Round duration</div>
+                  <div class="between" style="margin-bottom:var(--s-sm)"><span class="dim t-cap">15s</span><span class="score-pill">60s</span><span class="dim t-cap">300s</span></div>
+                  <div class="slider"><div class="track"><div class="fill" style="width:30%"></div><div class="thumb" style="left:30%"></div></div></div>
+                </div>
+                <div>
+                  <div class="form-h">Scoring</div>
+                  <div class="stack" style="gap:var(--s-sm)">
+                    <div class="between"><span class="t-body">Correct</span><div class="stepper"><button>−</button><span class="v">+1</span><button>+</button></div></div>
+                    <div class="between"><span class="t-body">Rounds / team</span><div class="stepper"><button>−</button><span class="v">3</span><button>+</button></div></div>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div class="footer"><button class="btn3d btn3d--pink btn3d--xl btn3d--block">Start Game</button></div>
+          </div></div>
+          <div class="caption">1 · Setup</div>
+        </div>
+
+        <!-- GAME INTRO -->
+        <div class="phone-wrap">
+          <div class="phone"><div class="screen"><div class="notch"></div>
+            <div class="statusbar"><span>9:41</span><span>▮▮▮ 100%</span></div>
+            <div class="sbody">
+              <div class="center">
+                <div class="meta-pill">📲 Pass the phone to</div>
+                <div class="display glow" style="color:var(--team-1); font-size:46px; text-align:center">Red Rockets</div>
+                <div class="score-pill">⭐ Score 12</div>
+                <div class="t-heading dim">Round 2 of 3</div>
+                <div class="chip chip--cyan">🗣 Describe — no part of the word</div>
+              </div>
+              <button class="btn3d btn3d--pink btn3d--xl btn3d--block" style="margin-bottom:var(--s-md)">Start Round →</button>
+            </div>
+          </div></div>
+          <div class="caption">1.5 · Game Intro (hand-off)</div>
+        </div>
+
+        <!-- GAME -->
+        <div class="phone-wrap">
+          <div class="phone"><div class="screen"><div class="notch"></div>
+            <div class="statusbar"><span>9:41</span><span>▮▮▮ 100%</span></div>
+            <div class="pop">+1</div>
+            <div class="sbody">
+              <div class="between">
+                <span class="chip" style="color:var(--team-1);border-color:var(--team-1)">🚀 Red Rockets</span>
+                <span class="score-pill">⭐ 17</span>
+              </div>
+              <div style="display:flex; justify-content:center; margin-top:var(--s-md)">
+                <div class="ring" style="--p:64"><span class="num t-timer" style="font-size:32px">0:38</span></div>
+              </div>
+              <div class="center" style="gap:var(--s-md)">
+                <div class="combo"><span class="flame">🔥</span> ×3 COMBO</div>
+                <div class="word-card"><div class="word display glow" style="color:#fff">Lighthouse</div></div>
+                <div class="powerups"><div class="pwr">⚡<div class="cnt">2</div></div><div class="pwr">×2<div class="cnt">1</div></div><div class="pwr">🛡<div class="cnt">1</div></div></div>
+              </div>
+              <div class="action-bar" style="margin-bottom:var(--s-md)">
+                <button class="action action--correct"><span class="ico">✓</span>Correct</button>
+                <button class="action action--skip"><span class="ico">↪</span>Skip</button>
+                <button class="action action--foul"><span class="ico">⚑</span></button>
+              </div>
+            </div>
+          </div></div>
+          <div class="caption">2 · Game (juiced)</div>
+        </div>
+
+        <!-- ROUND RESULT -->
+        <div class="phone-wrap">
+          <div class="phone"><div class="screen">
+            <div class="confetti-area" id="conf-rr"></div>
+            <div class="notch"></div>
+            <div class="statusbar"><span>9:41</span><span>▮▮▮ 100%</span></div>
+            <div class="sbody">
+              <div class="center" style="flex:0 0 auto; gap:var(--s-sm); padding-top:var(--s-lg)">
+                <div style="font-size:44px">🎉</div>
+                <div class="t-title glow" style="color:var(--lime)">+6 points!</div>
+                <span class="chip" style="color:var(--team-1);border-color:var(--team-1)">🚀 Red Rockets → 18</span>
+              </div>
+              <div class="sscroll">
+                <div class="row" style="gap:var(--s-sm)">
+                  <div class="stat"><div class="n" style="color:var(--lime)">7</div><div class="l">Correct</div></div>
+                  <div class="stat"><div class="n" style="color:var(--amber)">2</div><div class="l">Skipped</div></div>
+                  <div class="stat"><div class="n" style="color:var(--red)">1</div><div class="l">Fouls</div></div>
+                </div>
+                <div>
+                  <div class="form-h">Word recap · tap to flip</div>
+                  <div class="stack" style="gap:var(--s-sm)">
+                    <div class="sb-row"><div class="nm">Anchor</div><span class="chip chip--lime">✓</span></div>
+                    <div class="sb-row"><div class="nm">Treasure ✨</div><span class="chip chip--amber">✓ ×2</span></div>
+                    <div class="sb-row"><div class="nm">Jigsaw</div><span class="chip chip--amber">↪</span></div>
+                    <div class="sb-row"><div class="nm">Compass</div><span class="chip chip--red">⚑</span></div>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div class="footer"><button class="btn3d btn3d--lime btn3d--xl btn3d--block">Continue →</button></div>
+          </div></div>
+          <div class="caption">3 · Round Result</div>
+        </div>
+
+        <!-- WINNER -->
+        <div class="phone-wrap">
+          <div class="phone"><div class="screen">
+            <div class="confetti-area" id="conf-win"></div>
+            <div class="notch"></div>
+            <div class="statusbar"><span>9:41</span><span>▮▮▮ 100%</span></div>
+            <div class="sbody">
+              <div class="center" style="flex:0 0 auto; gap:var(--s-sm); padding-top:var(--s-lg)">
+                <div style="font-size:58px">🏆</div>
+                <div class="display glow" style="color:var(--team-1); font-size:40px; text-align:center">Red Rockets<br>WIN!</div>
+              </div>
+              <div class="sscroll">
+                <div class="form-h">Final scoreboard</div>
+                <div class="stack" style="gap:var(--s-sm)">
+                  <div class="sb-row win"><span class="medal">🥇</span><div class="dot" style="background:var(--team-1);color:var(--team-1)"></div><div class="nm">Red Rockets<div class="dim t-cap">18 correct</div></div><div class="pt">18</div></div>
+                  <div class="sb-row"><span class="medal">🥈</span><div class="dot" style="background:var(--team-2);color:var(--team-2)"></div><div class="nm">Blue Bolts<div class="dim t-cap">14 correct</div></div><div class="pt">14</div></div>
+                  <div class="sb-row"><span class="medal">🥉</span><div class="dot" style="background:var(--team-3);color:var(--team-3)"></div><div class="nm">Green Giants<div class="dim t-cap">11 correct</div></div><div class="pt">11</div></div>
+                </div>
+                <div class="dim t-cap" style="text-align:center">9 rounds · Time Score</div>
+              </div>
+            </div>
+            <div class="footer">
+              <div class="row" style="flex-wrap:nowrap">
+                <button class="btn3d btn3d--ghost" style="flex:1">New Game</button>
+                <button class="btn3d btn3d--pink" style="flex:1">🔁 Rematch</button>
+              </div>
+            </div>
+          </div></div>
+          <div class="caption">4 · Winner</div>
+        </div>
+
+        <!-- RULES -->
+        <div class="phone-wrap">
+          <div class="phone"><div class="screen"><div class="notch"></div>
+            <div class="statusbar"><span>9:41</span><span>▮▮▮ 100%</span></div>
+            <div class="sbody">
+              <div class="between" style="margin-bottom:var(--s-sm)"><span class="t-title">How to play</span><span class="meta-pill">✕</span></div>
+              <div class="sscroll">
+                <div><div class="form-h">The goal</div><div class="t-body">Describe the on-screen word <b>without saying it</b>. Teammates shout guesses. Mark each word and beat the clock — most points wins!</div></div>
+                <div><div class="form-h">Marking words</div>
+                  <div class="stack" style="gap:var(--s-sm)">
+                    <div class="sb-row"><span class="chip chip--lime">✓</span><div class="nm">Correct — nailed it · +1</div></div>
+                    <div class="sb-row"><span class="chip chip--amber">↪</span><div class="nm">Skip — pass · 0 / −1</div></div>
+                    <div class="sb-row"><span class="chip chip--red">⚑</span><div class="nm">Foul — said the word · −1</div></div>
+                  </div>
+                </div>
+                <div><div class="form-h">Modes</div>
+                  <div class="stack" style="gap:var(--s-sm)">
+                    <div class="sb-row"><div class="nm">⏱ Time Score<div class="dim t-cap">Set rounds per team · highest wins</div></div></div>
+                    <div class="sb-row"><div class="nm">🎯 Max Score<div class="dim t-cap">First to the target wins</div></div></div>
+                  </div>
+                </div>
+                <div><div class="form-h">Describe modes</div>
+                  <div class="row" style="gap:var(--s-sm)"><span class="chip">Describe</span><span class="chip">Taboo</span><span class="chip">One word</span><span class="chip">Charades</span></div>
+                </div>
+                <div><div class="form-h">Power-ups & combos</div><div class="t-body">Chain correct answers for a <b>combo ×multiplier</b>, grab the shimmering <b>Golden Word</b> for bonus points, and spend power-ups like ⚡ Time Freeze and 🛡 Skip Shield.</div></div>
+              </div>
+            </div>
+          </div></div>
+          <div class="caption">5 · Rules</div>
+        </div>
+
+        <!-- SETTINGS -->
+        <div class="phone-wrap">
+          <div class="phone"><div class="screen"><div class="notch"></div>
+            <div class="statusbar"><span>9:41</span><span>▮▮▮ 100%</span></div>
+            <div class="sbody">
+              <div class="between" style="margin-bottom:var(--s-sm)"><span class="t-title">Settings</span><span class="meta-pill">✕</span></div>
+              <div class="sscroll">
+                <div><div class="form-h">Sound & haptics</div>
+                  <div class="stack" style="gap:var(--s-sm)">
+                    <div class="sb-row between"><span class="t-body">Sound effects</span><div class="switch on"><div class="knob"></div></div></div>
+                    <div class="sb-row between"><span class="t-body">Vibration</span><div class="switch on"><div class="knob"></div></div></div>
+                  </div>
+                </div>
+                <div><div class="form-h">Appearance</div>
+                  <div class="stack" style="gap:var(--s-sm)">
+                    <div class="sb-row" style="flex-direction:column; align-items:stretch; gap:var(--s-sm)"><span class="t-body">Theme</span><div class="seg" style="display:flex"><div style="flex:1;text-align:center">Light</div><div class="on" style="flex:1;text-align:center">Dark</div><div style="flex:1;text-align:center">System</div></div></div>
+                    <div class="sb-row between"><span class="t-body">High contrast</span><div class="switch"><div class="knob"></div></div></div>
+                    <div class="sb-row between"><span class="t-body">Large text</span><div class="switch"><div class="knob"></div></div></div>
+                  </div>
+                </div>
+                <div><div class="form-h">Layout & language</div>
+                  <div class="stack" style="gap:var(--s-sm)">
+                    <div class="sb-row between"><span class="t-body">Handedness</span><div class="seg"><div class="on">Right</div><div>Left</div></div></div>
+                    <div class="sb-row between"><span class="t-body">Language</span><span class="dim">English ›</span></div>
+                  </div>
+                </div>
+                <div><div class="form-h">Defaults</div>
+                  <div class="stack" style="gap:var(--s-md)">
+                    <div class="between"><span class="t-body">Round duration</span><span class="score-pill">60s</span></div>
+                    <div class="slider"><div class="track"><div class="fill" style="width:30%"></div><div class="thumb" style="left:30%"></div></div></div>
+                    <div class="between"><span class="t-body">Correct score</span><div class="stepper"><button>−</button><span class="v">+1</span><button>+</button></div></div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div></div>
+          <div class="caption">6 · Settings</div>
+        </div>
+
+        <!-- WORD PACKS -->
+        <div class="phone-wrap">
+          <div class="phone"><div class="screen"><div class="notch"></div>
+            <div class="statusbar"><span>9:41</span><span>▮▮▮ 100%</span></div>
+            <div class="sbody">
+              <div class="between" style="margin-bottom:var(--s-sm)"><span class="t-title">Word Packs</span><span class="meta-pill">✕</span></div>
+              <div class="sscroll">
+                <div><div class="form-h">Content filter</div><div class="seg" style="display:flex"><div style="flex:1;text-align:center">Kids</div><div class="on" style="flex:1;text-align:center">Standard</div><div style="flex:1;text-align:center">Adult</div></div></div>
+                <div><div class="form-h">Difficulty</div><div class="row" style="gap:var(--s-sm)"><span class="chip chip--lime">Easy</span><span class="chip chip--amber">Medium</span><span class="chip chip--red">Hard</span></div></div>
+                <div><div class="form-h">Select packs · combine as one deck</div>
+                  <div class="stack" style="gap:var(--s-sm)">
+                    <div class="sb-row win"><span style="font-size:20px">⭐</span><div class="nm">Standard<div class="dim t-cap">500 words · default</div></div><span style="color:var(--lime); font-weight:800">✓</span></div>
+                    <div class="sb-row win"><span style="font-size:20px">🐾</span><div class="nm">Animals<div class="dim t-cap">120 words</div></div><span style="color:var(--lime); font-weight:800">✓</span></div>
+                    <div class="sb-row win"><span style="font-size:20px">🎬</span><div class="nm">Movies<div class="dim t-cap">200 words</div></div><span style="color:var(--lime); font-weight:800">✓</span></div>
+                    <div class="sb-row"><span style="font-size:20px">⚽</span><div class="nm">Sports<div class="dim t-cap">90 words</div></div><span class="chip chip--amber">Med</span></div>
+                    <div class="sb-row"><span style="font-size:20px">🎃</span><div class="nm">Halloween<div class="dim t-cap">seasonal · 60</div></div><span class="chip chip--red">Hard</span></div>
+                  </div>
+                </div>
+                <div class="stack" style="gap:var(--s-sm)">
+                  <button class="btn3d btn3d--ghost btn3d--block">＋ Create custom pack</button>
+                  <button class="btn3d btn3d--amber btn3d--block">✨ Generate with AI</button>
+                </div>
+              </div>
+            </div>
+            <div class="footer"><button class="btn3d btn3d--pink btn3d--xl btn3d--block">Use 3 packs · 810 words 🎲</button></div>
+          </div></div>
+          <div class="caption">7 · Word Packs</div>
+        </div>
+
+        <!-- WORD LANGUAGE (idea 1) -->
+        <div class="phone-wrap">
+          <div class="phone"><div class="screen"><div class="notch"></div>
+            <div class="statusbar"><span>9:41</span><span>▮▮▮ 100%</span></div>
+            <div class="sbody">
+              <div class="between" style="margin-bottom:var(--s-sm)"><span class="t-title">Word language</span><span class="meta-pill">✕</span></div>
+              <div class="sscroll">
+                <div class="t-body dim">The language of the word cards — separate from the app language.</div>
+                <div><div class="form-h">Language</div>
+                  <div class="stack" style="gap:var(--s-sm)">
+                    <div class="sb-row win"><span style="font-size:20px">🇬🇧</span><div class="nm">English<div class="dim t-cap">Ready offline</div></div><span style="color:var(--lime);font-weight:800">✓</span></div>
+                    <div class="sb-row"><span style="font-size:20px">🇪🇸</span><div class="nm">Español<div class="dim t-cap">Ready offline</div></div></div>
+                    <div class="sb-row"><span style="font-size:20px">🇫🇷</span><div class="nm">Français<div class="dim t-cap">Tap to download</div></div><span class="chip">↓ 1.2 MB</span></div>
+                    <div class="sb-row"><span style="font-size:20px">🇩🇪</span><div class="nm">Deutsch<div class="dim t-cap">Tap to download</div></div><span class="chip">↓ 1.1 MB</span></div>
+                    <div class="sb-row"><span style="font-size:20px">🇵🇹</span><div class="nm">Português<div class="dim t-cap">Tap to download</div></div><span class="chip">↓ 1.0 MB</span></div>
+                  </div>
+                </div>
+                <div><div class="form-h">Bilingual — Translate-a-pack</div>
+                  <div class="sb-row between"><span class="t-body">Enable bilingual mode</span><div class="switch on"><div class="knob"></div></div></div>
+                  <div class="sb-row" style="flex-direction:column; align-items:center; gap:var(--s-sm); padding:var(--s-md); margin-top:var(--s-sm)">
+                    <div class="dim t-cap">Show in Español → say in English</div>
+                    <div class="t-title" style="font-size:32px">manzana</div>
+                    <div class="chip chip--lime">say “apple”</div>
+                  </div>
+                  <div class="dim t-cap" style="margin-top:6px">Saying the direct translation is the goal — Alias's core rule, as a mode.</div>
+                </div>
+              </div>
+            </div>
+            <div class="footer"><button class="btn3d btn3d--pink btn3d--xl btn3d--block">Done</button></div>
+          </div></div>
+          <div class="caption">Word Language (idea 1)</div>
+        </div>
+
+        <!-- AI GENERATE — input + progress (idea 2) -->
+        <div class="phone-wrap">
+          <div class="phone"><div class="screen"><div class="notch"></div>
+            <div class="statusbar"><span>9:41</span><span>▮▮▮ 100%</span></div>
+            <div class="sbody">
+              <div class="between" style="margin-bottom:var(--s-sm)"><span class="t-title">Generate with AI ✨</span><span class="meta-pill">✕</span></div>
+              <div class="sscroll">
+                <div><div class="form-h">Theme</div><input class="input" value="Harry Potter movies" />
+                  <div class="row" style="gap:var(--s-sm); margin-top:var(--s-sm)"><span class="chip">90s cartoons</span><span class="chip">Kitchen utensils</span><span class="chip">Office in-jokes</span></div>
+                </div>
+                <div class="row" style="gap:var(--s-md)">
+                  <div style="flex:1"><div class="form-h">Words</div><div class="stepper"><button>−</button><span class="v">50</span><button>+</button></div></div>
+                  <div style="flex:1"><div class="form-h">Language</div><span class="chip">🇬🇧 English</span></div>
+                </div>
+                <div class="sb-row between"><span class="t-body">Auto-fill Taboo + translations</span><div class="switch on"><div class="knob"></div></div></div>
+                <div style="display:flex; justify-content:center; padding-top:var(--s-sm)"><div class="ring" style="--p:74"><span class="num t-timer" style="font-size:26px">37<span class="dim" style="font-size:14px">/50</span></span></div></div>
+                <div class="t-title" style="text-align:center; font-size:18px">Generating…</div>
+                <div class="row shine" style="gap:6px; justify-content:center"><span class="chip chip--lime">Wand</span><span class="chip chip--red">Quidditch</span><span class="chip chip--amber">Potion</span><span class="chip">Owl</span></div>
+                <div class="dim t-cap" style="text-align:center">Words stream in as they're generated.</div>
+              </div>
+            </div>
+            <div class="footer"><button class="btn3d btn3d--ghost btn3d--xl btn3d--block">Cancel</button></div>
+          </div></div>
+          <div class="caption">AI Generate — input + progress (idea 2)</div>
+        </div>
+
+        <!-- AI PACK GENERATOR (idea 2) -->
+        <div class="phone-wrap">
+          <div class="phone"><div class="screen"><div class="notch"></div>
+            <div class="statusbar"><span>9:41</span><span>▮▮▮ 100%</span></div>
+            <div class="sbody">
+              <div class="between" style="margin-bottom:var(--s-sm)"><span class="t-title">Generate with AI ✨</span><span class="meta-pill">✕</span></div>
+              <div class="sscroll">
+                <div><div class="form-h">Theme</div><input class="input" value="Harry Potter movies" /><div class="dim t-cap" style="margin-top:4px">19 / 200 · generated in English</div></div>
+                <div class="row" style="gap:var(--s-md)">
+                  <div style="flex:1"><div class="form-h">Words</div><div class="stepper"><button>−</button><span class="v">50</span><button>+</button></div></div>
+                  <div style="flex:1"><div class="form-h">Filter</div><div class="seg"><div>Kids</div><div class="on">Std</div></div></div>
+                </div>
+                <div class="sb-row between"><span class="t-body">Auto-fill Taboo + translations</span><div class="switch on"><div class="knob"></div></div></div>
+                <div class="between"><div class="form-h" style="margin:0">Draft · 37 / 50</div><span class="chip chip--cyan">AI</span></div>
+                <div class="stack" style="gap:var(--s-sm)">
+                  <div class="sb-row"><div class="nm">Wand<div class="dim t-cap">taboo: magic · stick · spell</div></div><span class="chip chip--lime">Easy</span><span class="meta-pill">↺</span></div>
+                  <div class="sb-row"><div class="nm">Quidditch<div class="dim t-cap">taboo: broom · sport · snitch</div></div><span class="chip chip--red">Hard</span><span class="meta-pill">↺</span></div>
+                  <div class="sb-row"><div class="nm">Potion<div class="dim t-cap">taboo: brew · cauldron · mix</div></div><span class="chip chip--amber">Med</span><span class="meta-pill">↺</span></div>
+                </div>
+                <div class="chip chip--amber" style="align-self:flex-start">⚠️ Kids filter gates the prompt for an adult</div>
+              </div>
+            </div>
+            <div class="footer"><button class="btn3d btn3d--pink btn3d--xl btn3d--block">Review &amp; save pack</button></div>
+          </div></div>
+          <div class="caption">AI Pack Generator (idea 2)</div>
+        </div>
+
+        <!-- PACK EDITOR (idea 2) -->
+        <div class="phone-wrap">
+          <div class="phone"><div class="screen"><div class="notch"></div>
+            <div class="statusbar"><span>9:41</span><span>▮▮▮ 100%</span></div>
+            <div class="sbody">
+              <div class="between" style="margin-bottom:var(--s-sm)"><span class="t-title">New pack</span><span class="meta-pill">✕</span></div>
+              <div class="sscroll">
+                <div class="row" style="gap:var(--s-sm); flex-wrap:nowrap"><span class="meta-pill" style="font-size:20px">🎬</span><input class="input" style="flex:1" value="Cult movies" /></div>
+                <div class="row" style="gap:var(--s-md)">
+                  <div style="flex:1"><div class="form-h">Language</div><span class="chip">🇬🇧 English</span></div>
+                  <div style="flex:1"><div class="form-h">Rating</div><div class="seg"><div class="on">Std</div><div>Adult</div></div></div>
+                </div>
+                <div class="between"><div class="form-h" style="margin:0">Words · 24 · no dupes</div><span class="chip">Paste list</span></div>
+                <div class="stack" style="gap:var(--s-sm)">
+                  <div class="sb-row"><input class="input" style="flex:1" value="Goodfellas" /><span class="chip chip--amber">M</span><span class="meta-pill">✕</span></div>
+                  <div class="sb-row"><input class="input" style="flex:1" value="Big Lebowski" /><span class="chip chip--amber">M</span><span class="meta-pill">✕</span></div>
+                  <div class="sb-row"><input class="input" style="flex:1" value="Donnie Darko" /><span class="chip chip--red">H</span><span class="meta-pill">✕</span></div>
+                </div>
+                <button class="btn3d btn3d--ghost btn3d--block">＋ Add word</button>
+              </div>
+            </div>
+            <div class="footer"><div class="row" style="flex-wrap:nowrap"><button class="btn3d btn3d--ghost" style="flex:1">Share</button><button class="btn3d btn3d--pink" style="flex:1">Save</button></div></div>
+          </div></div>
+          <div class="caption">Pack Editor (idea 2)</div>
+        </div>
+
+        <!-- ADD / EDIT WORD (idea 2) -->
+        <div class="phone-wrap">
+          <div class="phone"><div class="screen"><div class="notch"></div>
+            <div class="statusbar"><span>9:41</span><span>▮▮▮ 100%</span></div>
+            <div class="sbody">
+              <div class="between" style="margin-bottom:var(--s-sm)"><span class="t-title">Add word</span><span class="meta-pill">✕</span></div>
+              <div class="sscroll">
+                <div><div class="form-h">Word</div><input class="input" value="Lighthouse" style="font-size:20px" /></div>
+                <div><div class="form-h">Difficulty</div><div class="seg" style="display:flex"><div style="flex:1;text-align:center">Easy</div><div class="on" style="flex:1;text-align:center">Medium</div><div style="flex:1;text-align:center">Hard</div></div></div>
+                <div>
+                  <div class="between"><div class="form-h" style="margin:0">Forbidden words · 3–5</div><span class="chip chip--cyan">✨ Auto-fill</span></div>
+                  <div class="stack" style="gap:var(--s-sm); margin-top:var(--s-sm)">
+                    <div class="sb-row"><input class="input" style="flex:1" value="beacon" /><span class="meta-pill">✕</span></div>
+                    <div class="sb-row"><input class="input" style="flex:1" value="tower" /><span class="meta-pill">✕</span></div>
+                    <div class="sb-row"><input class="input" style="flex:1" value="coast" /><span class="meta-pill">✕</span></div>
+                    <button class="btn3d btn3d--ghost btn3d--block">＋ Add forbidden word</button>
+                  </div>
+                </div>
+                <div><div class="form-h">Spanish translation <span class="dim t-cap">(bilingual)</span></div><input class="input" value="Faro" /></div>
+              </div>
+            </div>
+            <div class="footer"><button class="btn3d btn3d--pink btn3d--xl btn3d--block">Save word</button></div>
+          </div></div>
+          <div class="caption">Add / edit Word (idea 2)</div>
+        </div>
+
+        <!-- DISCOVER / PUBLISH (idea 2) -->
+        <div class="phone-wrap">
+          <div class="phone"><div class="screen"><div class="notch"></div>
+            <div class="statusbar"><span>9:41</span><span>▮▮▮ 100%</span></div>
+            <div class="sbody">
+              <div class="between" style="margin-bottom:var(--s-sm)"><span class="t-title">Pack Library</span><span class="meta-pill">＋</span></div>
+              <div class="seg" style="display:flex; margin-bottom:var(--s-sm)"><div style="flex:1;text-align:center">My Packs</div><div class="on" style="flex:1;text-align:center">Discover</div></div>
+              <input class="input" placeholder="Search community packs" />
+              <div class="row" style="gap:var(--s-sm); margin:var(--s-sm) 0"><span class="chip">🇬🇧 English</span><span class="chip">Standard</span><span class="chip">Popular ▾</span></div>
+              <div class="sscroll">
+                <div class="sb-row"><span style="font-size:22px">🧙</span><div class="nm">Wizarding World<div class="dim t-cap">by Mauve-Otter · 120 · ★4.8 · 12k</div></div><button class="btn3d btn3d--ghost" style="padding:8px 16px; font-size:14px">Get</button></div>
+                <div class="sb-row"><span style="font-size:22px">🍕</span><div class="nm">Foodie Faves<div class="dim t-cap">by Teal-Fox · 80 · ★4.5 · 3k</div></div><button class="btn3d btn3d--ghost" style="padding:8px 16px; font-size:14px">Get</button></div>
+                <div class="sb-row"><span style="font-size:22px">⚽</span><div class="nm">World Sports<div class="dim t-cap">by Blue-Jay · 140 · ★4.4 · 2k</div></div><button class="btn3d btn3d--ghost" style="padding:8px 16px; font-size:14px">Get</button></div>
+                <div class="sb-row"><span style="font-size:22px">🎬</span><div class="nm">Cult Movies<div class="dim t-cap">by Red-Wolf · 150 · ★4.2 · 900</div></div><button class="btn3d btn3d--ghost" style="padding:8px 16px; font-size:14px">Get</button></div>
+                <div class="dim t-cap" style="text-align:center">Packs are moderated · tap ⋯ to report</div>
+              </div>
+            </div>
+          </div></div>
+          <div class="caption">Discover / Publish (idea 2)</div>
+        </div>
+
+        <!-- SIGN UP (account, idea 3) -->
+        <div class="phone-wrap">
+          <div class="phone"><div class="screen"><div class="notch"></div>
+            <div class="statusbar"><span>9:41</span><span>▮▮▮ 100%</span></div>
+            <div class="sbody">
+              <div class="between" style="margin-bottom:var(--s-sm)"><span class="t-title">Create account</span><span class="meta-pill">✕</span></div>
+              <div class="sscroll">
+                <div class="t-body dim">You only need an account to <b>publish</b> packs. Playing, creating, and AI stay account-free.</div>
+                <div><div class="form-h">Nickname</div><input class="input" value="WordWizard" /></div>
+                <div><div class="form-h">Email</div><input class="input" value="you@example.com" /></div>
+                <div><div class="form-h">Password</div><input class="input" value="••••••••" /></div>
+                <div class="dim t-cap">We'll send a verification link. Used for sign-in, creator credit, and abuse contact.</div>
+              </div>
+            </div>
+            <div class="footer">
+              <button class="btn3d btn3d--pink btn3d--xl btn3d--block">Create account</button>
+              <div class="dim t-cap" style="text-align:center; margin-top:var(--s-sm)">Already have one? <b style="color:var(--cyan)">Sign in</b></div>
+            </div>
+          </div></div>
+          <div class="caption">Sign Up (idea 3)</div>
+        </div>
+
+        <!-- PROFILE (account, idea 3) -->
+        <div class="phone-wrap">
+          <div class="phone"><div class="screen"><div class="notch"></div>
+            <div class="statusbar"><span>9:41</span><span>▮▮▮ 100%</span></div>
+            <div class="sbody">
+              <div class="between" style="margin-bottom:var(--s-sm)"><span class="t-title">Profile</span><span class="meta-pill">⚙</span></div>
+              <div class="sscroll">
+                <div class="center" style="flex:0 0 auto; gap:6px; padding:var(--s-md) 0">
+                  <div style="font-size:48px">🧙</div>
+                  <div class="t-title" style="font-size:22px">WordWizard</div>
+                  <div class="dim t-cap">Member since Jun 2026 · Edit profile</div>
+                </div>
+                <div class="row" style="gap:var(--s-sm)">
+                  <div class="stat"><div class="n">7</div><div class="l">Packs</div></div>
+                  <div class="stat"><div class="n">18k</div><div class="l">Installs</div></div>
+                  <div class="stat"><div class="n">★4.7</div><div class="l">Rating</div></div>
+                </div>
+                <div><div class="form-h">My packs</div>
+                  <div class="stack" style="gap:var(--s-sm)">
+                    <div class="sb-row"><span style="font-size:20px">🧙</span><div class="nm">Wizarding World<div class="dim t-cap">12k installs · ★4.8</div></div><span class="chip chip--lime">Published</span></div>
+                    <div class="sb-row"><span style="font-size:20px">🍕</span><div class="nm">Foodie Faves<div class="dim t-cap">3k installs · ★4.5</div></div><span class="chip chip--lime">Published</span></div>
+                    <div class="sb-row"><span style="font-size:20px">🎬</span><div class="nm">Cult Movies<div class="dim t-cap">in review</div></div><span class="chip chip--amber">Pending</span></div>
+                    <div class="sb-row"><span style="font-size:20px">📝</span><div class="nm">Office in-jokes<div class="dim t-cap">draft · not published</div></div><span class="chip">Draft</span></div>
+                  </div>
+                </div>
+                <div class="stack" style="gap:var(--s-sm)">
+                  <button class="btn3d btn3d--ghost btn3d--block">Change password</button>
+                  <button class="btn3d btn3d--ghost btn3d--block">Sign out</button>
+                </div>
+              </div>
+            </div>
+          </div></div>
+          <div class="caption">Profile (idea 3)</div>
+        </div>
+
+        <!-- FIRST RUN — APP (UI) LANGUAGE -->
+        <div class="phone-wrap">
+          <div class="phone"><div class="screen"><div class="notch"></div>
+            <div class="statusbar"><span>9:41</span><span>▮▮▮ 100%</span></div>
+            <div class="sbody">
+              <div style="padding-top:var(--s-sm)">
+                <div class="t-title">Choose your language</div>
+                <div class="t-body dim" style="margin-top:4px">Sets the app's interface language — change it anytime in Settings. This is not the in-game word language.</div>
+              </div>
+              <div class="sscroll" style="margin-top:var(--s-md)">
+                <div class="form-h">Bundled with the app</div>
+                <div class="stack" style="gap:var(--s-sm)">
+                  <div class="sb-row selected"><span class="lang-flag">🇬🇧</span><div class="lang-name">English<div class="sub">English</div></div><span class="radio on">✓</span></div>
+                  <div class="sb-row"><span class="lang-flag">🇪🇸</span><div class="lang-name">Español<div class="sub">Spanish</div></div><span class="radio"></span></div>
+                  <div class="sb-row"><span class="lang-flag">🇫🇷</span><div class="lang-name">Français<div class="sub">French</div></div><span class="radio"></span></div>
+                  <div class="sb-row"><span class="lang-flag">🇩🇪</span><div class="lang-name">Deutsch<div class="sub">German</div></div><span class="radio"></span></div>
+                  <div class="sb-row"><span class="lang-flag">🇵🇹</span><div class="lang-name">Português<div class="sub">Portuguese</div></div><span class="radio"></span></div>
+                </div>
+                <div class="dim t-cap" style="text-align:center">More interface languages coming after launch.</div>
+              </div>
+            </div>
+            <div class="footer"><button class="btn3d btn3d--pink btn3d--xl btn3d--block">Continue →</button></div>
+          </div></div>
+          <div class="caption">First run · App language <span class="dim">(UI language — changeable in Settings)</span></div>
+        </div>
+
+        <!-- FIRST RUN — WORD LANGUAGE (offline download states) -->
+        <div class="phone-wrap">
+          <div class="phone"><div class="screen"><div class="notch"></div>
+            <div class="statusbar"><span>9:41</span><span>▮▮▮ 100%</span></div>
+            <div class="sbody">
+              <div style="padding-top:var(--s-sm)">
+                <div class="t-title">Choose word language</div>
+                <div class="t-body dim" style="margin-top:4px">The language of the word cards — independent of the app language.</div>
+              </div>
+              <div class="sscroll" style="margin-top:var(--s-md)">
+                <div class="note"><span class="ico">📥</span><span class="txt">Download the languages you want so you can play offline. Picking a language doesn't require a download — but downloaded ones work with no network.</span></div>
+                <div class="form-h">Available languages</div>
+                <div class="stack" style="gap:var(--s-sm)">
+                  <!-- selected + downloaded -->
+                  <div class="sb-row selected"><span class="lang-flag">🇬🇧</span><div class="lang-name">English<div class="sub">English</div></div><span class="badge-offline">✓ Available offline</span><span class="radio on">✓</span></div>
+                  <!-- downloaded, not selected -->
+                  <div class="sb-row"><span class="lang-flag">🇪🇸</span><div class="lang-name">Español<div class="sub">Spanish</div></div><span class="badge-offline">✓ Available offline</span><span class="radio"></span></div>
+                  <!-- downloading -->
+                  <div class="sb-row"><span class="lang-flag">🇫🇷</span><div class="lang-name">Français<div class="sub">French · downloading…</div></div><span class="dl-progress"><span class="dl-ring" style="--p:62"><span class="pct">62%</span></span></span><span class="radio"></span></div>
+                  <!-- not downloaded -->
+                  <div class="sb-row"><span class="lang-flag">🇩🇪</span><div class="lang-name">Deutsch<div class="sub">German</div></div><div style="display:flex; flex-direction:column; align-items:flex-end; flex:0 0 auto"><button class="dl-btn">↓ Download</button><span class="dl-size">1.1 MB</span></div><span class="radio"></span></div>
+                  <div class="sb-row"><span class="lang-flag">🇵🇹</span><div class="lang-name">Português<div class="sub">Portuguese</div></div><div style="display:flex; flex-direction:column; align-items:flex-end; flex:0 0 auto"><button class="dl-btn">↓ Download</button><span class="dl-size">1.0 MB</span></div><span class="radio"></span></div>
+                  <!-- beyond the launch 5 → implies a dynamic server catalog -->
+                  <div class="sb-row"><span class="lang-flag">🇮🇹</span><div class="lang-name">Italiano<div class="sub">Italian</div></div><div style="display:flex; flex-direction:column; align-items:flex-end; flex:0 0 auto"><button class="dl-btn">↓ Download</button><span class="dl-size">1.2 MB</span></div><span class="radio"></span></div>
+                  <div class="sb-row"><span class="lang-flag">🇳🇱</span><div class="lang-name">Nederlands<div class="sub">Dutch</div></div><div style="display:flex; flex-direction:column; align-items:flex-end; flex:0 0 auto"><button class="dl-btn">↓ Download</button><span class="dl-size">0.9 MB</span></div><span class="radio"></span></div>
+                  <div class="sb-row"><span class="lang-flag">🇵🇱</span><div class="lang-name">Polski<div class="sub">Polish</div></div><div style="display:flex; flex-direction:column; align-items:flex-end; flex:0 0 auto"><button class="dl-btn">↓ Download</button><span class="dl-size">1.3 MB</span></div><span class="radio"></span></div>
+                </div>
+                <div class="dim t-cap" style="text-align:center">Catalog updates over the air · new languages appear here.</div>
+              </div>
+            </div>
+            <div class="footer"><button class="btn3d btn3d--pink btn3d--xl btn3d--block">Continue →</button></div>
+          </div></div>
+          <div class="caption">First run · Word language <span class="dim">(download / downloading / available-offline)</span></div>
+        </div>
+
+        <!-- IN-SETUP — "Change language" row -->
+        <div class="phone-wrap">
+          <div class="phone"><div class="screen"><div class="notch"></div>
+            <div class="statusbar"><span>9:41</span><span>▮▮▮ 100%</span></div>
+            <div class="sbody">
+              <div class="between" style="margin-bottom:var(--s-sm)"><span class="t-title">New Game</span><span class="meta-pill">⚙</span></div>
+              <div class="sscroll">
+                <div>
+                  <div class="form-h">Word language</div>
+                  <div class="settings-row">
+                    <span class="ico">🇬🇧</span>
+                    <div class="label">Change language<div class="dim t-cap" style="font-weight:400; margin-top:2px">Language of the word cards</div></div>
+                    <span class="value">English</span>
+                    <span class="chev">›</span>
+                  </div>
+                  <div class="dim t-cap" style="margin-top:6px">Defaults to your first-run choice. Add a second language for bilingual mode.</div>
+                </div>
+                <div>
+                  <div class="form-h">Teams</div>
+                  <div class="stack" style="gap:var(--s-sm)">
+                    <div class="team-row"><div class="dot" style="background:var(--team-1);color:var(--team-1)"></div><input class="input" value="Red Rockets" /></div>
+                    <div class="team-row"><div class="dot" style="background:var(--team-2);color:var(--team-2)"></div><input class="input" value="Blue Bolts" /></div>
+                    <button class="btn3d btn3d--ghost btn3d--block">＋ Add team</button>
+                  </div>
+                </div>
+                <div>
+                  <div class="form-h">Timer &amp; scoring</div>
+                  <div class="between"><span class="t-body">Round duration</span><span class="score-pill">60s</span></div>
+                </div>
+              </div>
+            </div>
+            <div class="footer"><button class="btn3d btn3d--pink btn3d--xl btn3d--block">Start Game</button></div>
+          </div></div>
+          <div class="caption">In-Setup · Change language row <span class="dim">(value = first-run choice)</span></div>
+        </div>
+
+        <!-- IN-SETUP — Word-language BOTTOM SHEET (primary + optional secondary) -->
+        <div class="phone-wrap">
+          <div class="phone"><div class="screen"><div class="notch"></div>
+            <div class="statusbar"><span>9:41</span><span>▮▮▮ 100%</span></div>
+            <!-- dimmed Setup screen behind the sheet -->
+            <div class="sbody" style="padding-bottom:0">
+              <div class="between" style="margin-bottom:var(--s-sm)"><span class="t-title">New Game</span><span class="meta-pill">⚙</span></div>
+              <div class="form-h">Word language</div>
+              <div class="settings-row" style="opacity:.5"><span class="ico">🇬🇧</span><div class="label">Change language</div><span class="value">English</span><span class="chev">›</span></div>
+            </div>
+            <!-- BottomSheet over a dimmed backdrop -->
+            <div class="sheet-overlay">
+              <div class="sheet">
+                <div class="sheet-grabber"></div>
+                <div class="sheet-head"><span class="t-heading">Word language</span><span class="meta-pill">✕</span></div>
+                <div class="sheet-body">
+                  <!-- PRIMARY — the language teams play in -->
+                  <div>
+                    <div class="form-h">Primary — play language</div>
+                    <div class="stack" style="gap:var(--s-sm)">
+                      <div class="sb-row selected"><span class="lang-flag">🇬🇧</span><div class="lang-name">English<div class="sub">English</div></div><span class="tag-role tag-role--primary">Primary</span><span class="radio on">✓</span></div>
+                      <div class="sb-row"><span class="lang-flag">🇪🇸</span><div class="lang-name">Español<div class="sub">Spanish</div></div><span class="badge-offline">✓ Offline</span><span class="radio"></span></div>
+                      <div class="sb-row"><span class="lang-flag">🇫🇷</span><div class="lang-name">Français<div class="sub">French</div></div><div style="display:flex; flex-direction:column; align-items:flex-end; flex:0 0 auto"><button class="dl-btn">↓ Get</button><span class="dl-size">1.2 MB</span></div><span class="radio"></span></div>
+                      <div class="sb-row"><span class="lang-flag">🇩🇪</span><div class="lang-name">Deutsch<div class="sub">German</div></div><div style="display:flex; flex-direction:column; align-items:flex-end; flex:0 0 auto"><button class="dl-btn">↓ Get</button><span class="dl-size">1.1 MB</span></div><span class="radio"></span></div>
+                    </div>
+                  </div>
+                  <!-- SECONDARY — clearly optional. Chosen = dotted accent; plus empty-state add. -->
+                  <div>
+                    <div class="form-h">Secondary — optional · enables bilingual mode</div>
+                    <div class="sb-row secondary"><span class="lang-flag">🇪🇸</span><div class="lang-name">Español<div class="sub">Show word → say the English answer</div></div><span class="tag-role tag-role--secondary">2nd</span><span class="meta-pill">✕</span></div>
+                    <div class="dim t-cap" style="margin:6px 0 var(--s-sm)">Bilingual mode shows the word in one language; the goal is to say it in the other.</div>
+                    <button class="secondary-add"><span class="plus">＋</span> Add a second language <span class="dim" style="font-weight:400">(optional)</span></button>
+                  </div>
+                </div>
+                <div class="sheet-footer"><button class="btn3d btn3d--pink btn3d--xl btn3d--block">Apply</button></div>
+              </div>
+            </div>
+          </div></div>
+          <div class="caption">In-Setup · Word-language sheet <span class="dim">(primary + optional secondary = bilingual)</span></div>
+        </div>
+
+      </div>
+    </section>
+  </main>
+
+  <script>
+    const navBtns = document.querySelectorAll('.nav button');
+    const panels = document.querySelectorAll('.panel');
+    navBtns.forEach(b => b.addEventListener('click', () => {
+      navBtns.forEach(x => x.classList.remove('active'));
+      panels.forEach(p => p.classList.remove('active'));
+      b.classList.add('active');
+      document.getElementById(b.dataset.panel).classList.add('active');
+    }));
+    // sprinkle confetti into the celebration screens
+    const colors = ['#FF2E93','#FFD23F','#21E6E6','#38E66B','#B06BFF','#FF8242'];
+    function sprinkle(id, n) {
+      const host = document.getElementById(id);
+      if (!host) return;
+      for (let i = 0; i < n; i++) {
+        const c = document.createElement('div');
+        c.className = 'conf';
+        const left = (i * 37) % 100;
+        const delay = (i % 10) * 0.35;
+        const dur = 2.8 + (i % 5) * 0.5;
+        c.style.left = left + '%';
+        c.style.background = colors[i % colors.length];
+        c.style.animationDelay = delay + 's';
+        c.style.animationDuration = dur + 's';
+        host.appendChild(c);
+      }
+    }
+    sprinkle('conf-rr', 18);
+    sprinkle('conf-win', 30);
+  </script>
+</body>
+</html>

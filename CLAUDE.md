@@ -1,14 +1,14 @@
-# CLAUDE.md
+# CLAUDE.md — Alias Mobile App (`/Alias-V2`)
 
-This file gives Claude Code (and any AI assistant) the context and conventions for this repository. It is the source of truth for how we build. Keep it **short, current, and specific** — vague guidance produces vague results. Update it whenever a convention changes.
+Context and conventions for the **Alias mobile app** (Expo / React Native), which lives in the `Alias-V2/` project folder. Read this with the workspace guide at [`../CLAUDE.md`](../CLAUDE.md); backend conventions are in [`../Alias-V2-beckend/CLAUDE.md`](../Alias-V2-beckend/CLAUDE.md). Keep this file **short, current, and specific** — vague guidance produces vague results.
 
 ---
 
 ## Project overview
 
-> Replace this section with your app's purpose in 2–3 sentences.
+**Alias** is a cross-platform (iOS + Android) **word-guessing party game**. Teams take turns: one player (the *describer*) explains words to teammates without saying the word or its translation, racing a countdown timer; the app scores Correct / Skip / Foul. The full product spec is [`alias-game-requirements-v2.md`](alias-game-requirements-v2.md) (in this folder).
 
-**[App Name]** is a cross-platform mobile app (iOS + Android) built with React Native. It [does X for Y users].
+**The defining constraint: offline-first is a hard release gate.** The core game is **pass-and-play on one shared device** and must work with **no network** — a full game must play in airplane mode on a fresh install with only the bundled starter pack. The backend powers only optional v2/v3 extras and may only ever *write* packs into local storage; it must never gate gameplay, pack selection, or a word draw.
 
 ---
 
@@ -17,41 +17,35 @@ This file gives Claude Code (and any AI assistant) the context and conventions f
 | Concern             | Choice                                      | Notes                                              |
 | ------------------- | ------------------------------------------- | -------------------------------------------------- |
 | Language            | **TypeScript** (strict)                     | No untyped JS files.                               |
-| Framework           | **Expo** (SDK 52+), New Architecture on     | Hermes engine enabled.                             |
+| Framework           | **Expo** (SDK 56), New Architecture on      | Hermes engine enabled.                             |
 | Routing             | **Expo Router** (file-based)                | Routes live in `app/`.                             |
 | Server state        | **TanStack Query** (React Query)            | All network data goes through Query.               |
 | Global client state | **Zustand**                                 | UI/session state only — never server data.         |
 | Local state         | React `useState` / `useReducer`             | Default to this before reaching for a store.       |
 | Forms + validation  | **React Hook Form** + **Zod**               | One Zod schema per form; infer types from it.      |
-| Styling             | `StyleSheet.create` + theme tokens          | Alt: NativeWind / Unistyles (pick one, not many).  |
+| Styling             | `StyleSheet.create` + theme tokens          | Pull from `src/theme/` — no hardcoded values.      |
 | Lists               | **FlashList** (`@shopify/flash-list`)       | For anything scrollable beyond a handful of items. |
 | Images              | **expo-image**                              | Caching + performance over `<Image>`.              |
 | Animations          | **react-native-reanimated**                 | Runs on the UI thread.                             |
 | Testing             | **Jest** + **React Native Testing Library** | E2E with **Maestro**.                              |
 | Lint / format       | **ESLint** (flat config) + **Prettier**     | Type-check with `tsc`.                             |
 
-> Bare React Native CLI instead of Expo? Keep everything below; swap the routing section for React Navigation and the `expo start` commands for `react-native run-*`.
-
 ---
 
 ## Commands
 
 ```bash
-# Install
-npm install                 # or pnpm install / yarn
+# from /Alias-V2
+npm install                 # install
 
-# Develop
 npx expo start              # dev server + QR code
 npx expo start --ios        # open iOS simulator
 npx expo start --android    # open Android emulator
 npx expo run:ios            # native build (after adding native modules)
 
-# Quality gates — run all three before committing
 npm run lint                # eslint
 npm run typecheck           # tsc --noEmit
 npm test                    # jest
-
-# Other
 npm run format              # prettier --write .
 npx maestro test .maestro/  # E2E flows
 eas build --platform ios    # production build via EAS
@@ -66,7 +60,7 @@ eas build --platform ios    # production build via EAS
 Feature-first. Screens are thin; logic lives in features. `app/` holds routes only.
 
 ```
-.
+Alias-V2/
 ├── app/                        # Expo Router routes — screens ONLY, default exports required
 │   ├── (tabs)/                 # Tab group
 │   │   ├── _layout.tsx
@@ -84,12 +78,14 @@ Feature-first. Screens are thin; logic lives in features. `app/` holds routes on
 │   │       ├── schemas.ts      # Zod schemas
 │   │       └── store.ts        # Feature Zustand store (if needed)
 │   ├── hooks/                  # Cross-feature hooks
-│   ├── lib/                    # Clients & config (apiClient, queryClient, storage)
+│   ├── lib/                    # Clients & config (apiClient, queryClient, storage, config)
 │   ├── stores/                 # Global Zustand stores
 │   ├── theme/                  # Design tokens: colors, spacing, typography, radii
 │   ├── types/                  # Shared types
 │   └── utils/                  # Pure, side-effect-free helpers
 ├── assets/                     # Fonts, images, icons
+├── design/                     # Visual mockups (index.html, arcade.html, vivid.html)
+├── alias-game-requirements-v2.md  # Full product spec
 ├── app.config.ts               # Expo config (typed)
 └── tsconfig.json
 ```
@@ -162,26 +158,15 @@ const styles = StyleSheet.create({
 - **Global client state** → Zustand (auth/session, theme, feature flags). Keep stores small and sliced.
 - **Never store server data in Zustand.** If it comes from the network, it belongs in Query.
 
-```ts
-// src/stores/session.ts
-import { create } from 'zustand';
-
-type SessionState = {
-  token: string | null;
-  setToken: (token: string | null) => void;
-};
-
-export const useSession = create<SessionState>((set) => ({
-  token: null,
-  setToken: (token) => set({ token }),
-}));
-```
-
 ---
 
-## Networking
+## Networking (and the backend seam)
 
-One typed client in `src/lib/apiClient.ts` (base URL from env). Every call is wrapped in a Query/mutation hook inside the relevant feature's `api/` folder. Components consume hooks, never `fetch` directly.
+One typed client in `src/lib/apiClient.ts` (base URL from `src/lib/config.ts`). Every call is wrapped in a Query/mutation hook inside the relevant feature's `api/` folder. Components consume hooks, never `fetch` directly.
+
+- **Types come from the shared contracts** (`../contracts`, the `@alias/contracts` Zod package), not hand-written per call site. Import the Zod schemas / `z.infer` types — never duplicate or fork a wire shape.
+- **Offline-first enforcement lives here.** `apiClient` must normalize `fetch` rejections (and the `https://api.example.com` default base URL on a fresh airplane-mode install) into the shared `OFFLINE` / `NETWORK_UNAVAILABLE` envelope code. Every optional-feature call site treats that as a soft, non-blocking state — **never** an error that reaches gameplay UI.
+- Always handle `isLoading` and `isError` in the UI. Use stable, structured query keys.
 
 ```ts
 // src/features/profile/api/useProfile.ts
@@ -195,8 +180,6 @@ export function useProfile(id: string) {
   });
 }
 ```
-
-Always handle `isLoading` and `isError` in the UI. Use stable, structured query keys.
 
 ---
 
@@ -217,6 +200,7 @@ Always handle `isLoading` and `isError` in the UI. Use stable, structured query 
 - Animations on the UI thread via Reanimated; avoid heavy work in the JS thread during gestures.
 - Images via `expo-image` with explicit sizes and caching.
 - Keep New Architecture + Hermes enabled.
+- **Timer correctness** (the game's hot path): drive round length from an absolute `roundEndTimestamp`, not accumulated intervals; a single UI ticker computes remaining time — see [`alias-game-requirements-v2.md` §8](alias-game-requirements-v2.md).
 
 ---
 
@@ -225,7 +209,7 @@ Always handle `isLoading` and `isError` in the UI. Use stable, structured query 
 - Every interactive element has `accessibilityRole` and a meaningful `accessibilityLabel`.
 - Touch targets ≥ 44×44 pt (use `hitSlop` for small icons).
 - Support dynamic font sizes; don't hardcode font scaling off.
-- Meet WCAG AA contrast using theme tokens.
+- Meet WCAG AA contrast using theme tokens. Use color **plus** icon (not color alone) for Correct vs Skip.
 
 ---
 
@@ -233,8 +217,8 @@ Always handle `isLoading` and `isError` in the UI. Use stable, structured query 
 
 - **Behavior over implementation.** Query by role/text/label, not test IDs where avoidable.
 - Co-locate tests as `Component.test.tsx`, or place them in `__tests__/`.
-- Cover: critical user flows, edge/error states, and pure utils.
-- E2E happy paths with Maestro in `.maestro/`.
+- Cover: critical user flows, edge/error states, and pure utils (timer, scoring, word-draw-without-repeat).
+- E2E happy paths with Maestro in `.maestro/`. Include the **airplane-mode end-to-end** flow — it's a release gate.
 
 ```tsx
 import { render, screen, fireEvent } from '@testing-library/react-native';
@@ -258,18 +242,12 @@ it('calls onPress when tapped', () => {
 
 ---
 
-## Git & workflow
-
-- **Conventional Commits**: `feat:`, `fix:`, `chore:`, `refactor:`, `test:`, `docs:`.
-- Small, focused PRs. Pass `lint` + `typecheck` + `test` before pushing.
-- Don't commit generated files, `node_modules`, or build artifacts.
-
----
-
 ## Do NOT
 
 - Use `any`, or suppress TS/lint errors without a justifying comment.
+- Let any network call gate gameplay, pack selection, or a word draw (offline-first is a release gate).
 - Store server data in Zustand (use TanStack Query).
+- Duplicate or fork a wire shape — import it from `../contracts`.
 - Hardcode colors, spacing, or font sizes in components (use `theme/`).
 - Render long lists with `.map()` inside a `ScrollView`.
 - Add a dependency without checking its size and native (config-plugin) impact.
