@@ -1,33 +1,24 @@
-import { darkColors, lightColors, type ThemeColors } from './colors';
-import { radii } from './radii';
-import { spacing } from './spacing';
-import { typography } from './typography';
+/**
+ * Theme barrel. Multi-theme system: a superset token contract every theme
+ * implements, plus optional decoration groups. Components consume `useTheme()`
+ * + `useThemedStyles()`; the app mounts `<ThemeProvider>` once at the root.
+ */
 
-export type Theme = {
-  colors: ThemeColors;
-  spacing: typeof spacing;
-  radii: typeof radii;
-  typography: typeof typography;
-};
+import { resolveTheme } from './registry';
+import type { Theme } from './types';
+
+export * from './types';
+export { spacing } from './tokens/spacing';
+export { baseTypography, makeTypography } from './tokens/typography';
+export { themes, themeKeys, resolveTheme } from './registry';
+export { useThemeStore } from './store';
+export { ThemeProvider } from './ThemeProvider';
+export { useTheme } from './useTheme';
+export { useThemedStyles } from './useThemedStyles';
 
 /**
- * Static theme used in `StyleSheet.create` (defaults to light scheme tokens).
- * For scheme-aware colors at runtime, use `useTheme()` from `@/theme/useTheme`.
+ * Static default theme (classic / light) for non-hook contexts — e.g. spacing
+ * and radii referenced in module-scope `StyleSheet.create`. For anything color-
+ * or theme-dependent, use `useTheme()` / `useThemedStyles()` instead.
  */
-export const theme: Theme = {
-  colors: lightColors,
-  spacing,
-  radii,
-  typography,
-};
-
-export const darkTheme: Theme = {
-  colors: darkColors,
-  spacing,
-  radii,
-  typography,
-};
-
-export { lightColors, darkColors, spacing, radii, typography };
-export type { ThemeColors };
-export { useTheme } from './useTheme';
+export const theme: Theme = resolveTheme('classic', 'light', 'light');
