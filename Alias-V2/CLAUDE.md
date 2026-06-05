@@ -164,7 +164,7 @@ const styles = StyleSheet.create({
 
 One typed client in `src/lib/apiClient.ts` (base URL from `src/lib/config.ts`). Every call is wrapped in a Query/mutation hook inside the relevant feature's `api/` folder. Components consume hooks, never `fetch` directly.
 
-- **Types come from the shared contracts** (`../contracts`, the `@alias/contracts` Zod package), not hand-written per call site. Import the Zod schemas / `z.infer` types — never duplicate or fork a wire shape.
+- **Types come from the shared contracts** (`../packages/contracts`, the `@alias/contracts` Zod package), not hand-written per call site. Import the Zod schemas / `z.infer` types — never duplicate or fork a wire shape.
 - **Offline-first enforcement lives here.** `apiClient` must normalize `fetch` rejections (and the `https://api.example.com` default base URL on a fresh airplane-mode install) into the shared `OFFLINE` / `NETWORK_UNAVAILABLE` envelope code. Every optional-feature call site treats that as a soft, non-blocking state — **never** an error that reaches gameplay UI.
 - Always handle `isLoading` and `isError` in the UI. Use stable, structured query keys.
 
@@ -247,7 +247,7 @@ it('calls onPress when tapped', () => {
 - Use `any`, or suppress TS/lint errors without a justifying comment.
 - Let any network call gate gameplay, pack selection, or a word draw (offline-first is a release gate).
 - Store server data in Zustand (use TanStack Query).
-- Duplicate or fork a wire shape — import it from `../contracts`.
+- Duplicate or fork a wire shape — import it from `../packages/contracts`.
 - Hardcode colors, spacing, or font sizes in components (use `theme/`).
 - Render long lists with `.map()` inside a `ScrollView`.
 - Add a dependency without checking its size and native (config-plugin) impact.

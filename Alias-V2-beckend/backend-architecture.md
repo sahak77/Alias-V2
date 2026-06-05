@@ -8,11 +8,11 @@
 > ### Locked decisions (2026-06-03)
 > 1. **Framework = NestJS** on `@nestjs/platform-fastify`. Chosen for team familiarity and because the deferred publishing platform (CRUD/RBAC/admin/queues/moderation) is NestJS's sweet spot — one framework runs end-to-end with no later migration. The firm-v2 proxy accepts a little extra ceremony as the price. Zod stays the single contract source via `nestjs-zod` (`createZodDto` + `ZodValidationPipe`); **no class-validator DTOs**.
 > 2. **Database = the full Postgres 17 + Drizzle v2 schema is provisioned now** (accounts, published packs, ratings/installs, reports, moderation verdicts, content policy) with `drizzle-kit` migrations + Drizzle Studio — front-loading the data model per the explicit "db setup" goal. The *feature logic/endpoints* that mutate most of those tables stay deferred behind seams; the schema exists so the model is reviewed and stable from day one.
-> 3. **Layout = sibling folders under the workspace root: `Alias-V2/` (Expo app) + `Alias-V2-beckend/` (NestJS) + `contracts/` (shared Zod, planned).** Plain folders, not npm-workspaces tooling; `contracts/` is shared by relative-path import (`../contracts`). Each project owns its `CLAUDE.md`; the repo root `CLAUDE.md` is the workspace guide. Formalize npm-workspaces only if publishing nears.
+> 3. **Layout = a single git monorepo under the workspace root: `Alias-V2/` (Expo app) + `Alias-V2-beckend/` (NestJS) as sibling project folders, plus `packages/contracts/` (shared Zod, planned).** Plain folders, not npm-workspaces tooling; `packages/contracts/` is shared by relative-path import (`../packages/contracts`). Each project owns its `CLAUDE.md`; the repo root `CLAUDE.md` is the workspace guide. Formalize npm-workspaces only if publishing nears.
 
 > ### Implementation status (2026-06-04) — initial scaffold landed
 > The initial template/architecture below is **scaffolded and verified**: `typecheck` + `lint` + SWC `build` + Vitest e2e (boots the real Nest pipeline) + a boot smoke-test all pass; the app boots with **zero outbound connections** (offline-first invariant verified). Deltas from the plan above, so the doc matches the code:
-> - **`contracts/` is scaffolded** (no longer "planned"): a **tsup-built** `@alias/contracts` package (dual ESM/CJS + `.d.ts`), consumed by the backend via `"@alias/contracts": "file:../contracts"`. `zod` is a **peer dependency** so app/contracts/server share one Zod 4 runtime. Schemas shipped: the error envelope, `GenerationRequest`/`WordCard`/`AiMeta`/`GenerationResponse`, `ContentPolicy`, `Pack`, `Locale`. The RN-safe import-boundary is enforced by ESLint (`no-restricted-imports`) + `"types": []`. The backend resolves the package purely through the `file:` symlink (no tsconfig `paths` overlay needed); run `contracts`' `tsup --watch` to keep `dist` fresh during development.
+> - **`packages/contracts/` is scaffolded** (no longer "planned"): a **tsup-built** `@alias/contracts` package (dual ESM/CJS + `.d.ts`), consumed by the backend via `"@alias/contracts": "file:../packages/contracts"`. `zod` is a **peer dependency** so app/contracts/server share one Zod 4 runtime. Schemas shipped: the error envelope, `GenerationRequest`/`WordCard`/`AiMeta`/`GenerationResponse`, `ContentPolicy`, `Pack`, `Locale`. The RN-safe import-boundary is enforced by ESLint (`no-restricted-imports`) + `"types": []`. The backend resolves the package purely through the `file:` symlink (no tsconfig `paths` overlay needed); run `packages/contracts`' `tsup --watch` to keep `dist` fresh during development.
 > - **Build = SWC** (Nest's SWC builder); `tsc` is used for `--noEmit` typecheck only. This **resolves the "TS 6 × Nest decorators" risk** (§6): SWC emits decorator metadata, so TypeScript **6.0.3** (matching the app) is used everywhere with no metadata concern. `.swcrc` mirrors `experimentalDecorators` + `emitDecoratorMetadata`; Vitest uses `unplugin-swc` (with Vitest 4's Oxc transformer disabled). **`nest start --watch`** additionally needs **`chokidar`** (an *optional* peer of `@swc/cli` — npm skips it by default, so it's pinned as a devDep, else `start:dev` throws "Cannot find module 'chokidar'").
 > - **Validation + Swagger:** `nestjs-zod@5` — global `ZodValidationPipe` via `APP_PIPE`, error-envelope filter via `APP_FILTER` (so the e2e test and the app share the same pipeline). nestjs-zod 5 **replaced `patchNestJsSwagger` with `cleanupOpenApiDoc()`** (called after `createDocument`); the OpenAPI document is stamped **3.1**. Swagger UI under the Fastify adapter requires **`@fastify/static`** (added as a runtime dep), else `/docs` setup aborts bootstrap.
 > - **Env validation:** `@nestjs/config` + a Zod `validate()` callback (chosen over `@t3-oss/env-core`). Missing `DATABASE_URL` fails boot loudly; all infra vars are optional/validated-if-present so a fresh, offline boot makes no network calls.
@@ -29,7 +29,7 @@
 > - **Pack model — bundled *starter* + server-driven *official* catalog.** The standard play words are **packs**, not loose words. A small **starter pack** (default launch language) is bundled in the app binary as the offline safety net; the **full standard catalog** (all languages + themes) is **server-driven**, delivered as first-party *"official"* packs through the **same `published_pack` + catalog + R2 path** as community packs. First launch lets the user pick ≥1 pack and **downloads** it; a fresh airplane-mode install still plays via the starter. So the catalog's *read*/download path is a **v1 onboarding** concern, while community publish/ratings/moderation stay deferred. (client/device `source`: `builtin` starter · `downloaded` official/community · `custom`/`ai` local · `imported` QR/file; the server `published_pack.source` enum is just `builtin`/`custom`/`ai`.)
 > - **App (UI) language ≠ word language.** The app UI language is the **bundled i18n launch set** (`LAUNCH_LOCALES` = en/es/fr/de/pt, expandable, lazy-loaded) — a client/Settings concern the backend is not involved in. Only *word* languages are server-driven.
 > - **Game-rule decisions** (mobile spec; no backend impact): negative scores allowed; tie-break = repeated sudden-death until a winner (no draw); Max-Score fairness "finish the rotation" = default true; teams stay team-level only for v1.
-> - **`contracts/` already updated accordingly:** `Locale` = open BCP-47 string + `LAUNCH_LOCALES`; `ContentFilter` = `standard | adult`; `ContentPolicy` dropped `allowedKidsCategories`. Backend `content-policy` controller no longer statically validates the locale (the catalog is dynamic).
+> - **`packages/contracts/` already updated accordingly:** `Locale` = open BCP-47 string + `LAUNCH_LOCALES`; `ContentFilter` = `standard | adult`; `ContentPolicy` dropped `allowedKidsCategories`. Backend `content-policy` controller no longer statically validates the locale (the catalog is dynamic).
 
 ---
 
@@ -164,7 +164,7 @@ The headline backend *is* an LLM proxy, so LLM-grade tracing is the center of gr
 
 ## 5. Proposed project layout
 
-**Locked: sibling folders under the workspace root — `Alias-V2/` (Expo app) + `Alias-V2-beckend/` (NestJS) + `contracts/` (shared Zod — now scaffolded as a tsup-built package).** Plain folders (no npm-workspaces tooling); `contracts/` is shared by relative-path import — depended on via `"@alias/contracts": "file:../contracts"`. Each project owns its `CLAUDE.md`; the repo root holds the workspace guide.
+**Locked: a single git monorepo under the workspace root — `Alias-V2/` (Expo app) + `Alias-V2-beckend/` (NestJS) as sibling project folders, plus `packages/contracts/` (shared Zod — now scaffolded as a tsup-built package).** Plain folders (no npm-workspaces tooling); `packages/contracts/` is shared by relative-path import — depended on via `"@alias/contracts": "file:../packages/contracts"`. Each project owns its `CLAUDE.md`; the repo root holds the workspace guide.
 
 ```
 alias-workspace/                        # repo root = the VS Code "workspace"
@@ -177,13 +177,14 @@ alias-workspace/                        # repo root = the VS Code "workspace"
 │   ├── alias-game-requirements-v2.md   # full product spec
 │   ├── app.config.ts
 │   └── tsconfig.json
-├── contracts/                          # shared Zod source of truth (SCAFFOLDED; tsup-built dist, consumed via file:../contracts)
-│   ├── generation.ts                   # GenerationRequest, WordCard, aiMeta
-│   ├── content-policy.ts               # ContentPolicy{locale, version, blocklist[]}
-│   ├── locale.ts                       # LocaleSchema (open BCP-47 string) + LAUNCH_LOCALES
-│   ├── errors.ts                        # error envelope incl. OFFLINE/NETWORK_UNAVAILABLE
-│   ├── pack.ts                          # slim card {w,d,t?,h?}, Pack metadata
-│   └── index.ts
+├── packages/
+│   └── contracts/                      # shared Zod source of truth (SCAFFOLDED; tsup-built dist, consumed via file:../packages/contracts)
+│       ├── generation.ts               # GenerationRequest, WordCard, aiMeta
+│       ├── content-policy.ts           # ContentPolicy{locale, version, blocklist[]}
+│       ├── locale.ts                   # LocaleSchema (open BCP-47 string) + LAUNCH_LOCALES
+│       ├── errors.ts                   # error envelope incl. OFFLINE/NETWORK_UNAVAILABLE
+│       ├── pack.ts                      # slim card {w,d,t?,h?}, Pack metadata
+│       └── index.ts
 └── Alias-V2-beckend/                   # the new backend — a single NestJS app (Fastify adapter)
     ├── CLAUDE.md                        # BACKEND guide (NestJS conventions, scope, seams)
     ├── backend-architecture.md          # THIS doc — architecture + rationale
@@ -244,7 +245,7 @@ The shared **normalizer** (`infra/normalize.ts`) is the one server file the RN c
 
 **Genuine forks for the human to decide (crisp either/or):**
 
-1. **Repo layout?** → **DECIDED: plain sibling folders — `Alias-V2/` + `Alias-V2-beckend/` + `contracts/` (planned) under the workspace root**, shared via relative-path import (not npm-workspaces). Each project owns its `CLAUDE.md`. Formalize npm-workspaces only when accounts/catalog are greenlit.
+1. **Repo layout?** → **DECIDED: a single git monorepo under the workspace root — `Alias-V2/` + `Alias-V2-beckend/` as sibling project folders, plus `packages/contracts/`**, shared via relative-path import (not npm-workspaces). Each project owns its `CLAUDE.md`. Formalize npm-workspaces only when accounts/catalog are greenlit.
 2. **Host: Railway vs Render for the (eventual) DB tier?** → *Railway* for unified DX and usage-based idle pricing. *Render* for the **PII + legal-evidence Postgres** specifically (PITR + automatic backups on all paid tiers). Compromise: Railway for compute, but treat **verified PITR-capable backups + a tested restore runbook as a v2 launch gate**, plus encryption-at-rest and private-network-only DB access. (The firm-v2 proxy needs no DB at all — this fork only bites when the catalog lands.)
 3. **BYO-key transport: client-direct vs proxied?** → *Client-direct* strongly preferred. *Proxied* only if you must run the content gate on BYO output (then never-logged secret + CI redaction assertion).
 4. **Auth token mechanism: `@better-auth/expo` session vs Better Auth issues a plain bearer?** → Decide before writing auth UI; don't run both.
@@ -279,4 +280,4 @@ The shared **normalizer** (`infra/normalize.ts`) is the one server file the RN c
 
 The one real cost cliff is the AI proxy under abuse — which is exactly why the hard-reservation spend cap (§D4) and bounded attestation soft-fail (§D4) are load-bearing, not optional.
 
-**Existing client touchpoints this design depends on** (under `Alias-V2/`, the mobile project): `Alias-V2/src/lib/apiClient.ts` (wrap for the `OFFLINE` envelope), `Alias-V2/src/lib/config.ts` (`apiUrl` default), `Alias-V2/src/lib/storage.ts` (`expo-secure-store` token), `Alias-V2/src/features/auth/schemas.ts` (migrate server-touching schemas into `contracts/` when auth lands).
+**Existing client touchpoints this design depends on** (under `Alias-V2/`, the mobile project): `Alias-V2/src/lib/apiClient.ts` (wrap for the `OFFLINE` envelope), `Alias-V2/src/lib/config.ts` (`apiUrl` default), `Alias-V2/src/lib/storage.ts` (`expo-secure-store` token), `Alias-V2/src/features/auth/schemas.ts` (migrate server-touching schemas into `packages/contracts/` when auth lands).

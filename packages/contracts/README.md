@@ -2,7 +2,7 @@
 
 Shared **Zod** wire-shape contracts — the single source of truth for data crossing the network between the Alias mobile app and backend.
 
-- **Consumed by both** the Expo/React Native app (Metro) and the NestJS backend (via `file:../contracts`).
+- **Consumed by both** the Expo/React Native app (Metro) and the NestJS backend (via `file:../packages/contracts`).
 - **RN-safe:** pure schemas + types only. **No** server-only imports (no NestJS, DB, Redis, AWS/R2, OpenTelemetry, Node built-ins) — enforced by `eslint` (`no-restricted-imports`) and `"types": []` in `tsconfig.json`.
 - `zod` is a **peer dependency** so every consumer shares one Zod runtime (schema identity / `instanceof` must hold across the boundary).
 
@@ -14,7 +14,7 @@ npm run build      # tsup -> dist/{index.js,index.cjs,index.d.ts}
 npm run dev        # tsup --watch (keep dist fresh while developing the backend)
 ```
 
-The backend resolves the built `dist` through the `file:../contracts` symlink; its `tsconfig` `paths` overlay points at `src` for editor/typecheck DX. Rebuild (or run `npm run dev`) after changing a schema.
+The backend resolves the built `dist` through the `file:../packages/contracts` symlink; its `tsconfig` `paths` overlay points at `src` for editor/typecheck DX. Rebuild (or run `npm run dev`) after changing a schema.
 
 ## What's here
 

@@ -30,7 +30,7 @@ Practical consequences:
 | Runtime | **Node.js 24 LTS** | Always-on container (not serverless/edge) — clean abort propagation + OTel auto-instrumentation. |
 | Framework | **NestJS 11** on **`@nestjs/platform-fastify`** | DI + guards/interceptors/filters now; batteries ready for the publishing platform. Express adapter is the only fallback. |
 | Validation / DTOs | **`nestjs-zod`** (`createZodDto` + global `ZodValidationPipe`) | **Zod is the only DTO source.** Never add class-validator/class-transformer DTOs. |
-| Shared contracts | **`@alias/contracts`** (Zod, at `../contracts`) | Single source of truth shared with the RN client. Server re-validates everything; it is a *shape* contract, not a security boundary. |
+| Shared contracts | **`@alias/contracts`** (Zod, at `../packages/contracts`) | Single source of truth shared with the RN client. Server re-validates everything; it is a *shape* contract, not a security boundary. |
 | API | **REST + OpenAPI 3.1** via **`@nestjs/swagger`** | Must stay legible to Apple/Google reviewers + DMCA tooling. |
 | Database | **PostgreSQL 17** + **Drizzle ORM** + **drizzle-kit** | pg_trgm + per-locale `tsvector`. **No pgvector** until trigram demonstrably misses paraphrases. |
 | Counters / limits | **Upstash Redis** (`@upstash/ratelimit`) | Spend cap + rate limits via **hard Lua reservation**, not post-hoc INCR. |

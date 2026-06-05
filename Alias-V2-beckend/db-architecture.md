@@ -1,6 +1,6 @@
 # Alias Backend — Database Architecture (Postgres 17 + Drizzle)
 
-The relational data model for the Alias backend: tables, columns, relations, constraints, indexes, and the lifecycle invariants that govern them. This elaborates [`backend-architecture.md` §D7](backend-architecture.md) (and §D5/§D6/§D8) and aligns with the data model in [`../Alias-V2/alias-game-requirements-v2.md` §5](../Alias-V2/alias-game-requirements-v2.md) and the wire shapes in [`../contracts/`](../contracts/).
+The relational data model for the Alias backend: tables, columns, relations, constraints, indexes, and the lifecycle invariants that govern them. This elaborates [`backend-architecture.md` §D7](backend-architecture.md) (and §D5/§D6/§D8) and aligns with the data model in [`../Alias-V2/alias-game-requirements-v2.md` §5](../Alias-V2/alias-game-requirements-v2.md) and the wire shapes in [`../packages/contracts/`](../packages/contracts/).
 
 > **Status (2026-06-04) — designed, not yet authored.** DB *tooling* is in place (Drizzle + drizzle-kit + a lazy `pg` client + docker-compose Postgres + a `seed.ts` stub), but the schema barrel [`src/db/schema/index.ts`](src/db/schema/index.ts) is intentionally **empty** (`npm run db:generate` reports 0 tables). **This document is the design for the immediate next pass** that authors these tables + the first migration. The endpoints that *mutate* most tables stay deferred seams — only `content_policy` is read by firm-v2 code.
 
