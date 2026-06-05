@@ -10,14 +10,14 @@ This repo is a **single git monorepo** (one VS Code workspace) containing two pr
 
 | Path | What | Guide |
 | --- | --- | --- |
-| `Alias-V2/` | **Mobile app** (the product) — the Alias game (Expo / React Native). Also holds the product spec and design mockups (below). | [`Alias-V2/CLAUDE.md`](Alias-V2/CLAUDE.md) |
-| `Alias-V2-beckend/` | **Backend** — a single NestJS service for optional online features. (Folder name keeps the `beckend` spelling — match it exactly in paths.) | [`Alias-V2-beckend/CLAUDE.md`](Alias-V2-beckend/CLAUDE.md) |
+| `application/` | **Mobile app** (the product) — the Alias game (Expo / React Native). Also holds the product spec and design mockups (below). | [`application/CLAUDE.md`](application/CLAUDE.md) |
+| `beckend/` | **Backend** — a single NestJS service for optional online features. (Folder name keeps the `beckend` spelling — match it exactly in paths.) | [`beckend/CLAUDE.md`](beckend/CLAUDE.md) |
 | `packages/contracts/` | **Shared Zod contracts** — the single source of truth for wire shapes, relative-imported by both projects as `../packages/contracts` (`@alias/contracts`). *Scaffolded (tsup-built package; backend depends on it via `file:../packages/contracts`).* | — |
-| `Alias-V2/alias-game-requirements-v2.md` | The full product spec. | — |
-| `Alias-V2/design/` | Visual mockups (`index.html`, `arcade.html`, `vivid.html`). | — |
-| `Alias-V2-beckend/backend-architecture.md` | Backend architecture + rationale. | [`Alias-V2-beckend/backend-architecture.md`](Alias-V2-beckend/backend-architecture.md) |
+| `application/alias-game-requirements-v2.md` | The full product spec. | — |
+| `application/design/` | Visual mockups (`index.html`, `arcade.html`, `vivid.html`). | — |
+| `beckend/backend-architecture.md` | Backend architecture + rationale. | [`beckend/backend-architecture.md`](beckend/backend-architecture.md) |
 
-> **When working in a project, read that project's `CLAUDE.md`** — `Alias-V2/` (mobile) and `Alias-V2-beckend/` (backend) each own their stack, commands, and standards. This file only covers what spans both. The two projects are plain sibling folders (no npm-workspaces tooling); the shared `packages/contracts/` package is consumed via relative-path import (`../packages/contracts`, depended on as `file:../packages/contracts`).
+> **When working in a project, read that project's `CLAUDE.md`** — `application/` (mobile) and `beckend/` (backend) each own their stack, commands, and standards. This file only covers what spans both. The two projects are plain sibling folders (no npm-workspaces tooling); the shared `packages/contracts/` package is consumed via relative-path import (`../packages/contracts`, depended on as `file:../packages/contracts`).
 
 ---
 
@@ -44,7 +44,7 @@ Launch locales: en, es, fr, de, pt (architected to expand to RTL/CJK). The app U
 ## Git & workflow (whole repo)
 
 - **Conventional Commits**: `feat:`, `fix:`, `chore:`, `refactor:`, `test:`, `docs:`.
-- Small, focused PRs. Run the relevant project's `lint` + `typecheck` + `test` (in `Alias-V2/` and/or `Alias-V2-beckend/`) before pushing — each project has its own gates.
+- Small, focused PRs. Run the relevant project's `lint` + `typecheck` + `test` (in `application/` and/or `beckend/`) before pushing — each project has its own gates.
 - Don't commit generated files, `node_modules`, build artifacts, or secrets.
 
 ## Do NOT (whole repo)
@@ -54,4 +54,4 @@ Launch locales: en, es, fr, de, pt (architected to expand to RTL/CJK). The app U
 - Commit secrets, API keys, or `.env` files.
 - Add a dependency without checking its size and (on mobile) native config-plugin impact.
 
-> Project-specific Do-NOTs live in [`Alias-V2/CLAUDE.md`](Alias-V2/CLAUDE.md) and [`Alias-V2-beckend/CLAUDE.md`](Alias-V2-beckend/CLAUDE.md).
+> Project-specific Do-NOTs live in [`application/CLAUDE.md`](application/CLAUDE.md) and [`beckend/CLAUDE.md`](beckend/CLAUDE.md).

@@ -1,6 +1,6 @@
 # Alias — App Flow & Pages
 
-A map of **every page/screen in the Alias app**, what each one does (key buttons, modals, actions), and **which backend connection — if any — it uses**. Compiled from [`Alias-V2/alias-game-requirements-v2.md`](Alias-V2/alias-game-requirements-v2.md) §6–§7, the design mockups in [`Alias-V2/design/`](Alias-V2/design/), and [`Alias-V2-beckend/backend-architecture.md`](Alias-V2-beckend/backend-architecture.md).
+A map of **every page/screen in the Alias app**, what each one does (key buttons, modals, actions), and **which backend connection — if any — it uses**. Compiled from [`application/alias-game-requirements-v2.md`](application/alias-game-requirements-v2.md) §6–§7, the design mockups in [`application/design/`](application/design/), and [`beckend/backend-architecture.md`](beckend/backend-architecture.md).
 
 > **The one invariant:** the backend **never gates gameplay**. A full game plays in airplane mode on a fresh install with the bundled starter pack. Backend calls only ever *write* packs/data into local storage and **degrade softly** (failures become a non-blocking "temporarily unavailable", never a gameplay error). Where a page says **Backend: None**, it works fully offline.
 

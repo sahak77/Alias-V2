@@ -1,6 +1,6 @@
-# CLAUDE.md — Alias Mobile App (`/Alias-V2`)
+# CLAUDE.md — Alias Mobile App (`/application`)
 
-Context and conventions for the **Alias mobile app** (Expo / React Native), which lives in the `Alias-V2/` project folder. Read this with the workspace guide at [`../CLAUDE.md`](../CLAUDE.md); backend conventions are in [`../Alias-V2-beckend/CLAUDE.md`](../Alias-V2-beckend/CLAUDE.md). Keep this file **short, current, and specific** — vague guidance produces vague results.
+Context and conventions for the **Alias mobile app** (Expo / React Native), which lives in the `application/` project folder. Read this with the workspace guide at [`../CLAUDE.md`](../CLAUDE.md); backend conventions are in [`../beckend/CLAUDE.md`](../beckend/CLAUDE.md). Keep this file **short, current, and specific** — vague guidance produces vague results.
 
 ---
 
@@ -35,7 +35,7 @@ Context and conventions for the **Alias mobile app** (Expo / React Native), whic
 ## Commands
 
 ```bash
-# from /Alias-V2
+# from /application
 npm install                 # install
 
 npx expo start              # dev server + QR code
@@ -60,7 +60,7 @@ eas build --platform ios    # production build via EAS
 Feature-first. Screens are thin; logic lives in features. `app/` holds routes only.
 
 ```
-Alias-V2/
+application/
 ├── app/                        # Expo Router routes — screens ONLY, default exports required
 │   ├── (tabs)/                 # Tab group
 │   │   ├── _layout.tsx

@@ -1,6 +1,6 @@
-# CLAUDE.md — Alias Backend (`/Alias-V2-beckend`)
+# CLAUDE.md — Alias Backend (`/beckend`)
 
-Context and conventions for the **Alias backend**: a single **NestJS** service that supports the optional, network-only features of the Alias game. It lives in the `Alias-V2-beckend/` project folder (the `beckend` spelling is the real folder name — match it exactly). Read this with the workspace guide at [`../CLAUDE.md`](../CLAUDE.md) and the full rationale in [`backend-architecture.md`](backend-architecture.md) (in this folder). Keep this file short, current, and specific.
+Context and conventions for the **Alias backend**: a single **NestJS** service that supports the optional, network-only features of the Alias game. It lives in the `beckend/` project folder (the `beckend` spelling is the real folder name — match it exactly). Read this with the workspace guide at [`../CLAUDE.md`](../CLAUDE.md) and the full rationale in [`backend-architecture.md`](backend-architecture.md) (in this folder). Keep this file short, current, and specific.
 
 ---
 
@@ -51,7 +51,7 @@ Practical consequences:
 ## Commands
 
 ```bash
-# from /Alias-V2-beckend
+# from /beckend
 npm install
 
 # Local stack (Postgres + pgweb)

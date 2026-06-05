@@ -8,7 +8,7 @@
 > ### Locked decisions (2026-06-03)
 > 1. **Framework = NestJS** on `@nestjs/platform-fastify`. Chosen for team familiarity and because the deferred publishing platform (CRUD/RBAC/admin/queues/moderation) is NestJS's sweet spot — one framework runs end-to-end with no later migration. The firm-v2 proxy accepts a little extra ceremony as the price. Zod stays the single contract source via `nestjs-zod` (`createZodDto` + `ZodValidationPipe`); **no class-validator DTOs**.
 > 2. **Database = the full Postgres 17 + Drizzle v2 schema is provisioned now** (accounts, published packs, ratings/installs, reports, moderation verdicts, content policy) with `drizzle-kit` migrations + Drizzle Studio — front-loading the data model per the explicit "db setup" goal. The *feature logic/endpoints* that mutate most of those tables stay deferred behind seams; the schema exists so the model is reviewed and stable from day one.
-> 3. **Layout = a single git monorepo under the workspace root: `Alias-V2/` (Expo app) + `Alias-V2-beckend/` (NestJS) as sibling project folders, plus `packages/contracts/` (shared Zod, planned).** Plain folders, not npm-workspaces tooling; `packages/contracts/` is shared by relative-path import (`../packages/contracts`). Each project owns its `CLAUDE.md`; the repo root `CLAUDE.md` is the workspace guide. Formalize npm-workspaces only if publishing nears.
+> 3. **Layout = a single git monorepo under the workspace root: `application/` (Expo app) + `beckend/` (NestJS) as sibling project folders, plus `packages/contracts/` (shared Zod, planned).** Plain folders, not npm-workspaces tooling; `packages/contracts/` is shared by relative-path import (`../packages/contracts`). Each project owns its `CLAUDE.md`; the repo root `CLAUDE.md` is the workspace guide. Formalize npm-workspaces only if publishing nears.
 
 > ### Implementation status (2026-06-04) — initial scaffold landed
 > The initial template/architecture below is **scaffolded and verified**: `typecheck` + `lint` + SWC `build` + Vitest e2e (boots the real Nest pipeline) + a boot smoke-test all pass; the app boots with **zero outbound connections** (offline-first invariant verified). Deltas from the plan above, so the doc matches the code:
@@ -70,7 +70,7 @@
 - DB shape ≠ wire shape, so **do not** derive wire contracts from Drizzle tables.
 - On the server, consume the `@alias/contracts` Zod schemas via `nestjs-zod`'s `createZodDto` + a global `ZodValidationPipe` — **do not** introduce class-validator/class-transformer DTOs as a parallel source of truth (Nest's default examples use them; this forks the contract). The wire shape has exactly one home.
 - The RN app keeps its **existing** `src/lib/apiClient.ts` + per-feature TanStack Query hooks (pattern in `useLogin.ts`) and imports `@alias/contracts` for `z.infer` types only.
-- *Monorepo decision (a genuine fork — see §6):* `/Alias-V2-beckend` + relative import for the firm-v2 cut, OR a one-time workspace conversion (`apps/mobile`, `apps/api`, `packages/contracts`) if publishing is near. Whoever does it owns the repo-wide migration (workspaces, EAS build paths, `expo-router/entry` main field, CI). Add a CI guard asserting client and server resolve the **same** `@alias/contracts` version.
+- *Monorepo decision (a genuine fork — see §6):* `/beckend` + relative import for the firm-v2 cut, OR a one-time workspace conversion (`apps/mobile`, `apps/api`, `packages/contracts`) if publishing is near. Whoever does it owns the repo-wide migration (workspaces, EAS build paths, `expo-router/entry` main field, CI). Add a CI guard asserting client and server resolve the **same** `@alias/contracts` version.
 - *Trade-off:* contracts is the *shape* contract, **not a security boundary** — the server re-validates everything (the `theme` string is untrusted data: length cap ≤200, content gate, prompt-injection-as-data).
 
 ### D3. The offline-first seam is enforced at the *client* boundary; the backend is connectionless-to-gameplay and write-only
@@ -164,12 +164,12 @@ The headline backend *is* an LLM proxy, so LLM-grade tracing is the center of gr
 
 ## 5. Proposed project layout
 
-**Locked: a single git monorepo under the workspace root — `Alias-V2/` (Expo app) + `Alias-V2-beckend/` (NestJS) as sibling project folders, plus `packages/contracts/` (shared Zod — now scaffolded as a tsup-built package).** Plain folders (no npm-workspaces tooling); `packages/contracts/` is shared by relative-path import — depended on via `"@alias/contracts": "file:../packages/contracts"`. Each project owns its `CLAUDE.md`; the repo root holds the workspace guide.
+**Locked: a single git monorepo under the workspace root — `application/` (Expo app) + `beckend/` (NestJS) as sibling project folders, plus `packages/contracts/` (shared Zod — now scaffolded as a tsup-built package).** Plain folders (no npm-workspaces tooling); `packages/contracts/` is shared by relative-path import — depended on via `"@alias/contracts": "file:../packages/contracts"`. Each project owns its `CLAUDE.md`; the repo root holds the workspace guide.
 
 ```
 alias-workspace/                        # repo root = the VS Code "workspace"
 ├── CLAUDE.md                           # WORKSPACE guide (describes everything; offline-first invariant)
-├── Alias-V2/                           # the Expo / React Native app (the mobile project)
+├── application/                        # the Expo / React Native app (the mobile project)
 │   ├── CLAUDE.md                       # MOBILE guide (RN conventions, offline-first gameplay)
 │   ├── app/ …                          # Expo Router routes
 │   ├── src/ …                          # apiClient, features, theme, …
@@ -185,7 +185,7 @@ alias-workspace/                        # repo root = the VS Code "workspace"
 │       ├── errors.ts                   # error envelope incl. OFFLINE/NETWORK_UNAVAILABLE
 │       ├── pack.ts                      # slim card {w,d,t?,h?}, Pack metadata
 │       └── index.ts
-└── Alias-V2-beckend/                   # the new backend — a single NestJS app (Fastify adapter)
+└── beckend/                            # the new backend — a single NestJS app (Fastify adapter)
     ├── CLAUDE.md                        # BACKEND guide (NestJS conventions, scope, seams)
     ├── backend-architecture.md          # THIS doc — architecture + rationale
     ├── src/
@@ -237,7 +237,7 @@ alias-workspace/                        # repo root = the VS Code "workspace"
 
 The shared **normalizer** (`infra/normalize.ts`) is the one server file the RN client also imports (device/server parity for the content gate and `contentHash`) — keep it dependency-free so it's RN-safe.
 
-> The current layout is plain sibling folders. If publishing is greenlit and the backend grows, formalizing npm-workspaces (`apps/mobile`, `apps/api`, `packages/contracts`) is the documented next step — keep `expo-router/entry` `main` and the `@/*` alias intact, and add a CI guard that `Alias-V2` + `Alias-V2-beckend` resolve the same `@alias/contracts` version.
+> The current layout is plain sibling folders. If publishing is greenlit and the backend grows, formalizing npm-workspaces (`apps/mobile`, `apps/api`, `packages/contracts`) is the documented next step — keep `expo-router/entry` `main` and the `@/*` alias intact, and add a CI guard that `application` + `beckend` resolve the same `@alias/contracts` version.
 
 ---
 
@@ -245,7 +245,7 @@ The shared **normalizer** (`infra/normalize.ts`) is the one server file the RN c
 
 **Genuine forks for the human to decide (crisp either/or):**
 
-1. **Repo layout?** → **DECIDED: a single git monorepo under the workspace root — `Alias-V2/` + `Alias-V2-beckend/` as sibling project folders, plus `packages/contracts/`**, shared via relative-path import (not npm-workspaces). Each project owns its `CLAUDE.md`. Formalize npm-workspaces only when accounts/catalog are greenlit.
+1. **Repo layout?** → **DECIDED: a single git monorepo under the workspace root — `application/` + `beckend/` as sibling project folders, plus `packages/contracts/`**, shared via relative-path import (not npm-workspaces). Each project owns its `CLAUDE.md`. Formalize npm-workspaces only when accounts/catalog are greenlit.
 2. **Host: Railway vs Render for the (eventual) DB tier?** → *Railway* for unified DX and usage-based idle pricing. *Render* for the **PII + legal-evidence Postgres** specifically (PITR + automatic backups on all paid tiers). Compromise: Railway for compute, but treat **verified PITR-capable backups + a tested restore runbook as a v2 launch gate**, plus encryption-at-rest and private-network-only DB access. (The firm-v2 proxy needs no DB at all — this fork only bites when the catalog lands.)
 3. **BYO-key transport: client-direct vs proxied?** → *Client-direct* strongly preferred. *Proxied* only if you must run the content gate on BYO output (then never-logged secret + CI redaction assertion).
 4. **Auth token mechanism: `@better-auth/expo` session vs Better Auth issues a plain bearer?** → Decide before writing auth UI; don't run both.
@@ -280,4 +280,4 @@ The shared **normalizer** (`infra/normalize.ts`) is the one server file the RN c
 
 The one real cost cliff is the AI proxy under abuse — which is exactly why the hard-reservation spend cap (§D4) and bounded attestation soft-fail (§D4) are load-bearing, not optional.
 
-**Existing client touchpoints this design depends on** (under `Alias-V2/`, the mobile project): `Alias-V2/src/lib/apiClient.ts` (wrap for the `OFFLINE` envelope), `Alias-V2/src/lib/config.ts` (`apiUrl` default), `Alias-V2/src/lib/storage.ts` (`expo-secure-store` token), `Alias-V2/src/features/auth/schemas.ts` (migrate server-touching schemas into `packages/contracts/` when auth lands).
+**Existing client touchpoints this design depends on** (under `application/`, the mobile project): `application/src/lib/apiClient.ts` (wrap for the `OFFLINE` envelope), `application/src/lib/config.ts` (`apiUrl` default), `application/src/lib/storage.ts` (`expo-secure-store` token), `application/src/features/auth/schemas.ts` (migrate server-touching schemas into `packages/contracts/` when auth lands).
