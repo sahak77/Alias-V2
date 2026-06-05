@@ -1,0 +1,3 @@
+# SEAM — moderation pipeline (moderatePack() + queue + append-only takedown log).
+# Deferred; fail CLOSED when wired. The proxy's own output gate is the content-gate
+# interceptor (firm v2). See backend-architecture.md §D8 and §4.

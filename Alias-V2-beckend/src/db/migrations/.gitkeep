@@ -1,0 +1,2 @@
+# Drizzle migrations are generated here by `npm run db:generate`.
+# Empty until the schema lands in src/db/schema. Never `drizzle-kit push` to a shared DB.

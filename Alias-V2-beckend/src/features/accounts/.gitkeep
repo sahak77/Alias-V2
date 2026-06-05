@@ -1,0 +1,3 @@
+# SEAM — accounts / auth (Better Auth). Deferred: do not build until publishing is
+# greenlit. The app-domain `account` row links to Better Auth's own tables.
+# See backend-architecture.md §D6 and §4.

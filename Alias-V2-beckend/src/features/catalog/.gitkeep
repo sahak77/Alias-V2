@@ -1,0 +1,3 @@
+# SEAM — catalog / publishing / Discover (+ pg-boss jobs, search repo). Deferred:
+# do not build until publishing is greenlit. Tables exist; only the feature logic
+# is deferred. See backend-architecture.md §D7 and §4.
