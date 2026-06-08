@@ -112,6 +112,10 @@
     "wins": "{{name}} wins!",
     "gameOver": "Game over",
     "newGame": "New Game",
-    "restart": "Restart"
+    "restart": "Restart",
+    "roundsPlayed": "{{count}} rounds played",
+    "share": "Share results",
+    "shareWin": "{{name}} won our game of Alias! 🏆",
+    "shareOver": "We just played Alias! 🎉"
   }
 }
