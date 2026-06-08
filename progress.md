@@ -16,9 +16,9 @@ A living status tracker for the whole Alias workspace: **what is built, what is 
 
 ## Snapshot — 2026-06-08
 
-The **offline core game is playable end-to-end** on-device: `Home → Setup → Game Intro → Gameplay → Round Result → Winner`, covering **Time Score**, **Max Score**, and **sudden-death tie-breaks**, with undo, foul/skip gating, and a drift-free absolute-timestamp timer that auto-ends the round. It runs entirely offline on a bundled 50-word English starter pack, in any of 3 selectable themes. **All gameplay logic is a pure, fully-tested engine** (126 tests green). The game now **survives an app kill and backgrounding**: the session persists on every change and rehydrates on launch (with a migration ladder), an interrupted round re-enters a **Paused** state, leaving the gameplay screen freezes + saves the round (resumable from Home), and Home offers **Resume / New game / Discard**.
+The **offline core game is playable end-to-end** on-device: `Home → Setup → Game Intro → Gameplay → Round Result → Winner`, covering **Time Score**, **Max Score**, and **sudden-death tie-breaks**, with undo, foul/skip gating, and a drift-free absolute-timestamp timer that auto-ends the round. It runs entirely offline on a bundled 50-word English starter pack, in any of 3 selectable themes. **All gameplay logic is a pure, fully-tested engine** (129 tests green). The game now **survives an app kill and backgrounding**: the session persists on every change and rehydrates on launch (with a migration ladder), an interrupted round re-enters a **Paused** state, leaving the gameplay screen freezes + saves the round (resumable from Home), and Home offers **Resume / New game / Discard**.
 
-What's **not** there yet: sound & haptics (the rest of Milestone A's "feel" pass — plumbing decided, assets later), and the breadth of the spec — the Setup, Settings, and Home screens currently expose only a slice, and the menu/library/rules/onboarding screens don't exist. The **backend and shared contracts are scaffolded but dark** (every endpoint returns `NOT_IMPLEMENTED`; no DB tables authored) — correct, since the backend must never gate gameplay and isn't needed until v2.
+Setup is now full-spec (scoring/presets/buzzer/describe-mode, persisted defaults), **haptics** are wired, **all strings are i18n'd** (English end-to-end), and there's a **How-to-play** screen + a polished **Winner** (confetti/share). What's **not** there yet: bundled **sound assets** (audio is no-op plumbing until they land), the **pack library** + word-language picker, first-launch **onboarding**, the accessibility/Settings remainder (high-contrast, large-text, languages), and the **airplane-mode Maestro E2E** release gate. The **backend and shared contracts are scaffolded but dark** (every endpoint returns `NOT_IMPLEMENTED`; no DB tables authored) — correct, since the backend must never gate gameplay and isn't needed until v2.
 
 | Area | State |
 | --- | --- |
@@ -26,7 +26,7 @@ What's **not** there yet: sound & haptics (the rest of Milestone A's "feel" pass
 | Game engine (rules/scoring/word-draw/timer) | ✅ complete, pure, tested |
 | Themes | ✅ 3 (classic light+dark · arcade · vivid) |
 | Bundled starter pack | ✅ 50 words, English, `builtin` |
-| Tests (app) | ✅ 126 passing / 26 suites |
+| Tests (app) | ✅ 129 passing / 27 suites |
 | Lifecycle: persist + resume-after-kill + background-pause | ✅ persistence, rehydrate, Paused overlay, resumable exit |
 | Sound & haptics | 🟡 haptics wired (`expo-haptics`); sound is no-op until assets |
 | v1 menu/support screens (Rules, Library, onboarding, full Setup/Settings) | ⬜ / 🟡 |
@@ -125,7 +125,7 @@ The spec's MVP explicitly requires kill/resume, background handling, basic hapti
 - ✅ **Rules / How to play** screen (`app/rules.tsx`, i18n-native).
 - 🟡 **Settings → full spec** — ✅ sound/haptics (Vibration) toggles + left/right-handed layout (`usePrefsStore`, persisted, mirrors the action bar); ⬜ high-contrast & large-text, default duration & scoring, App (UI) language, **Word-languages** download/remove section.
 - ✅ **Round Result** — word-recap list (the round's Correct/Skipped/Foul words, empty groups hidden).
-- ⬜ **Winner** — animated confetti, total-rounds-played, **Share results** card via OS share sheet.
+- ✅ **Winner** — animated confetti (RN `Animated`, no dep), total-rounds-played, and **Share results** via the OS share sheet.
 
 **Packs, content & data:**
 - ⬜ Local **Pack store + My-Packs library** (browse/select; the `Pack` contract exists).
