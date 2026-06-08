@@ -47,7 +47,10 @@ export function chunky3dStyle({ theme, lipColor, glowColor, pressed }: Chunky3dA
   const style: ViewStyle = {
     borderBottomWidth: pressed ? b3d.pressedOffset : b3d.offset,
     borderBottomColor: lipColor,
-    transform: pressed ? [{ translateY: b3d.offset - b3d.pressedOffset }] : undefined,
+    // Always an array — never `undefined`. When a set transform is cleared to
+    // `undefined`, RN's style diff emits `transform: null`, and processTransform
+    // then throws "Cannot read property 'forEach' of null" on button release.
+    transform: [{ translateY: pressed ? b3d.offset - b3d.pressedOffset : 0 }],
   };
   if (glow && glowColor) {
     style.shadowColor = glowColor;
