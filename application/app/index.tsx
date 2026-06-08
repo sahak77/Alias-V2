@@ -47,7 +47,7 @@ export default function HomeScreen() {
         <Button
           title={t('home.wordPacks')}
           variant="secondary"
-          onPress={() => router.push('/pack-editor')}
+          onPress={() => router.push('/packs')}
           style={styles.full}
         />
         <Button title={t('home.settings')} variant="secondary" onPress={() => router.push('/settings')} style={styles.full} />

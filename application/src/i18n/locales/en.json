@@ -122,6 +122,12 @@
     "shareOver": "We just played Alias! 🎉"
   },
   "packs": {
+    "libraryTitle": "Word packs",
+    "starterNote": "The bundled Starter pack is always available.",
+    "empty": "No custom packs yet — create one below.",
+    "create": "New pack",
+    "editPack": "Edit {{title}}",
+    "deletePack": "Delete {{title}}",
     "newTitle": "New word pack",
     "editTitle": "Edit word pack",
     "back": "Back",
