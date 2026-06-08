@@ -16,7 +16,7 @@ A living status tracker for the whole Alias workspace: **what is built, what is 
 
 ## Snapshot — 2026-06-08
 
-The **offline core game is playable end-to-end** on-device: `Home → Setup → Game Intro → Gameplay → Round Result → Winner`, covering **Time Score**, **Max Score**, and **sudden-death tie-breaks**, with undo, foul/skip gating, and a drift-free absolute-timestamp timer that auto-ends the round. It runs entirely offline on a bundled 50-word English starter pack, in any of 3 selectable themes. **All gameplay logic is a pure, fully-tested engine** (122 tests green). The game now **survives an app kill and backgrounding**: the session persists on every change and rehydrates on launch (with a migration ladder), an interrupted round re-enters a **Paused** state, leaving the gameplay screen freezes + saves the round (resumable from Home), and Home offers **Resume / New game / Discard**.
+The **offline core game is playable end-to-end** on-device: `Home → Setup → Game Intro → Gameplay → Round Result → Winner`, covering **Time Score**, **Max Score**, and **sudden-death tie-breaks**, with undo, foul/skip gating, and a drift-free absolute-timestamp timer that auto-ends the round. It runs entirely offline on a bundled 50-word English starter pack, in any of 3 selectable themes. **All gameplay logic is a pure, fully-tested engine** (126 tests green). The game now **survives an app kill and backgrounding**: the session persists on every change and rehydrates on launch (with a migration ladder), an interrupted round re-enters a **Paused** state, leaving the gameplay screen freezes + saves the round (resumable from Home), and Home offers **Resume / New game / Discard**.
 
 What's **not** there yet: sound & haptics (the rest of Milestone A's "feel" pass — plumbing decided, assets later), and the breadth of the spec — the Setup, Settings, and Home screens currently expose only a slice, and the menu/library/rules/onboarding screens don't exist. The **backend and shared contracts are scaffolded but dark** (every endpoint returns `NOT_IMPLEMENTED`; no DB tables authored) — correct, since the backend must never gate gameplay and isn't needed until v2.
 
@@ -26,11 +26,11 @@ What's **not** there yet: sound & haptics (the rest of Milestone A's "feel" pass
 | Game engine (rules/scoring/word-draw/timer) | ✅ complete, pure, tested |
 | Themes | ✅ 3 (classic light+dark · arcade · vivid) |
 | Bundled starter pack | ✅ 50 words, English, `builtin` |
-| Tests (app) | ✅ 122 passing / 25 suites |
+| Tests (app) | ✅ 126 passing / 26 suites |
 | Lifecycle: persist + resume-after-kill + background-pause | ✅ persistence, rehydrate, Paused overlay, resumable exit |
 | Sound & haptics | 🟡 haptics wired (`expo-haptics`); sound is no-op until assets |
 | v1 menu/support screens (Rules, Library, onboarding, full Setup/Settings) | ⬜ / 🟡 |
-| i18n + accessibility pass | ⬜ |
+| i18n + accessibility pass | 🟡 i18n foundation done (English E2E); a11y pass + RTL audit pending |
 | Airplane-mode E2E (release gate) | ⬜ no `.maestro/` yet |
 | Backend service | 🟡 scaffolded, all endpoints `NOT_IMPLEMENTED` |
 | Backend DB | 🟡 tooling only — **0 tables authored** |
@@ -133,7 +133,7 @@ The spec's MVP explicitly requires kill/resume, background handling, basic hapti
 - ⬜ More/larger starter content as needed.
 
 **i18n / accessibility (foundations):**
-- ⬜ Externalize all strings (i18next + ICU plurals), **English end-to-end**; RTL-safe layout groundwork (`start`/`end`, `writingDirection`).
+- ✅ Externalize all strings — **i18next + react-i18next + expo-localization** (`src/i18n/`, English catalog `locales/en.json`); every screen uses `t()`, **English end-to-end**. Plurals use i18next's built-in CLDR rules (covers all launch locales; `i18next-icu` can layer on for ICU MessageFormat if needed). RTL-safe groundwork noted (use `start`/`end`). *(Remaining: a full RTL audit + the other launch locales, both v2; engine `validateSetup` should return codes to translate.)*
 - ⬜ **First-launch language onboarding** (app language → word language → starter packs) — degrades to the bundled starter offline; depends on the `GET /v1/languages` seam + R2 downloads (§3).
 - ⬜ Accessibility pass — roles/labels everywhere, ≥44pt targets, dynamic type, WCAG AA contrast, color **+** icon.
 
