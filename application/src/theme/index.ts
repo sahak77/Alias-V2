@@ -9,6 +9,7 @@ import type { Theme } from './types';
 
 export * from './types';
 export { spacing } from './tokens/spacing';
+export { DEFAULT_TEAM_COLORS } from './tokens/teamColors';
 export { baseTypography, makeTypography } from './tokens/typography';
 export { themes, themeKeys, resolveTheme } from './registry';
 export { useThemeStore } from './store';
