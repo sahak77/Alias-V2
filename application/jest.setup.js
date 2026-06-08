@@ -19,3 +19,13 @@ jest.mock('react-native-svg', () => {
   const Passthrough = ({ children, ...props }) => React.createElement(View, props, children);
   return { __esModule: true, default: Passthrough, Svg: Passthrough, Circle: Passthrough };
 });
+
+// expo-haptics has no native module under Jest — stub the API so the feedback
+// module is importable and its gating can be asserted.
+jest.mock('expo-haptics', () => ({
+  notificationAsync: jest.fn(() => Promise.resolve()),
+  impactAsync: jest.fn(() => Promise.resolve()),
+  selectionAsync: jest.fn(() => Promise.resolve()),
+  NotificationFeedbackType: { Success: 'success', Warning: 'warning', Error: 'error' },
+  ImpactFeedbackStyle: { Light: 'light', Medium: 'medium', Heavy: 'heavy' },
+}));

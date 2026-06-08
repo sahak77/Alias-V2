@@ -1,6 +1,8 @@
 import { useRouter } from 'expo-router';
+import { useEffect } from 'react';
 import { View } from 'react-native';
 import { Button, Card, Screen, Text } from '@/components/ui';
+import { feedback } from '@/features/settings';
 import { useThemedStyles, type Theme } from '@/theme';
 import { rankedTeams, winner } from '../engine';
 import { useGameSession } from '../useGameSession';
@@ -12,6 +14,11 @@ export function Winner() {
   const quit = useGameSession((s) => s.quit);
   const router = useRouter();
   const styles = useThemedStyles(makeStyles);
+
+  // Celebration feedback once, when the scoreboard first appears (spec §11).
+  useEffect(() => {
+    feedback.win();
+  }, []);
 
   if (!session) return null;
   const champ = winner(session);

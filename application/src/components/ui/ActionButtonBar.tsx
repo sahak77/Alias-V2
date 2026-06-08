@@ -12,6 +12,8 @@ type ActionButtonBarProps = {
   /** Disable Skip when a per-round skip limit is reached. */
   skipDisabled?: boolean;
   disabled?: boolean;
+  /** Mirror the row for left-handed layout (spec §6.1). */
+  reversed?: boolean;
 };
 
 /** Darker translucent bottom edge for the 3D lip — reads as a chunky button base. */
@@ -23,14 +25,14 @@ const LIP = 'rgba(0,0,0,0.28)';
  * for color-blind accessibility. Renders flat on classic, chunky 3D + gradient
  * on arcade/vivid.
  */
-export function ActionButtonBar({ onCorrect, onSkip, onFoul, skipDisabled, disabled }: ActionButtonBarProps) {
+export function ActionButtonBar({ onCorrect, onSkip, onFoul, skipDisabled, disabled, reversed }: ActionButtonBarProps) {
   const { theme } = useTheme();
   const styles = useThemedStyles(makeStyles);
   const soft = theme.decoration?.softTints;
   const g = theme.decoration?.gradients;
 
   return (
-    <View style={styles.row}>
+    <View style={[styles.row, reversed && styles.rowReversed]}>
       <ActionButton
         theme={theme}
         style={styles.flex}
@@ -154,6 +156,7 @@ function ActionButton({
 
 const makeStyles = (theme: Theme) => ({
   row: { flexDirection: 'row' as const, gap: theme.spacing.sm },
+  rowReversed: { flexDirection: 'row-reverse' as const },
   flex: { flex: 1 },
   square: { flexBasis: 88, flexGrow: 0, flexShrink: 0 },
 });

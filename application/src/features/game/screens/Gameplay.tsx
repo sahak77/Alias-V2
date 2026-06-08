@@ -1,10 +1,15 @@
-import { useCallback, useEffect } from 'react';
+import { useCallback, useEffect, useRef } from 'react';
 import { View } from 'react-native';
 import { ActionButtonBar, Button, Screen, Text, TimerRing, WordCard } from '@/components/ui';
+import { feedback, usePrefsStore } from '@/features/settings';
 import { useThemedStyles, type Theme } from '@/theme';
 import { activeTeam, canFoul, canSkip, liveTeamScore } from '../engine';
+import type { WordOutcome } from '../types';
 import { useGameSession } from '../useGameSession';
 import { useRoundClock } from '../useRoundClock';
+
+/** Ignore a second action tap within this window — mis-tap protection (spec §6.3). */
+const MISTAP_MS = 250;
 
 /** The hot-path gameplay screen (spec §6.3). */
 export function Gameplay() {
@@ -14,15 +19,45 @@ export function Gameplay() {
   const markWord = useGameSession((s) => s.markWord);
   const undo = useGameSession((s) => s.undo);
   const finishRound = useGameSession((s) => s.finishRound);
+  const handedness = usePrefsStore((s) => s.handedness);
   const styles = useThemedStyles(makeStyles);
 
-  const onExpire = useCallback(() => finishRound(), [finishRound]);
+  const paused = pausedRemainingMs !== null;
+
+  const onExpire = useCallback(() => {
+    feedback.timesUp();
+    finishRound();
+  }, [finishRound]);
   // Freeze the clock while paused: an undefined end-timestamp stops the ticker
   // and prevents a stray expiry firing in the background (spec §8).
-  const remaining = useRoundClock(
-    pausedRemainingMs !== null ? undefined : session?.roundEndTimestamp,
-    onExpire,
+  const remaining = useRoundClock(paused ? undefined : session?.roundEndTimestamp, onExpire);
+
+  // Resolve the on-screen word with matching feedback, guarded against a rapid
+  // double-tap registering twice (which would mark two words, spec §6.3/§11).
+  const lastTapAt = useRef(0);
+  const mark = useCallback(
+    (outcome: WordOutcome) => {
+      const now = Date.now();
+      if (now - lastTapAt.current < MISTAP_MS) return;
+      lastTapAt.current = now;
+      feedback[outcome]();
+      markWord(outcome);
+    },
+    [markWord],
   );
+
+  // Escalating warning over the final 10s (light) → 5s (medium), once per second.
+  const lastTickSec = useRef<number | null>(null);
+  useEffect(() => {
+    if (paused || remaining > 10 || remaining < 1) {
+      lastTickSec.current = null;
+      return;
+    }
+    if (lastTickSec.current !== remaining) {
+      lastTickSec.current = remaining;
+      (remaining <= 5 ? feedback.tickUrgent : feedback.tick)();
+    }
+  }, [remaining, paused]);
 
   // Leaving the round (iOS swipe-back, Android back, or any navigation) tears
   // down this screen — freeze the round on unmount so the absolute
@@ -60,10 +95,11 @@ export function Gameplay() {
       </View>
 
       <ActionButtonBar
-        onCorrect={() => markWord('correct')}
-        onSkip={() => markWord('skip')}
-        onFoul={canFoul(session) ? () => markWord('foul') : undefined}
+        onCorrect={() => mark('correct')}
+        onSkip={() => mark('skip')}
+        onFoul={canFoul(session) ? () => mark('foul') : undefined}
         skipDisabled={!canSkip(session)}
+        reversed={handedness === 'left'}
       />
     </Screen>
   );
