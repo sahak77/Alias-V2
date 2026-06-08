@@ -1,3 +1,4 @@
+/* global jest */
 // Jest setup runs before each test file.
 // @testing-library/react-native ships its built-in matchers automatically (v12.4+),
 // so no explicit jest-native import is needed.
@@ -10,3 +11,11 @@
 jest.mock('@react-native-async-storage/async-storage', () =>
   require('@react-native-async-storage/async-storage/jest/async-storage-mock'),
 );
+
+// Render react-native-svg primitives as plain views under Jest (no native canvas).
+jest.mock('react-native-svg', () => {
+  const React = require('react');
+  const { View } = require('react-native');
+  const Passthrough = ({ children, ...props }) => React.createElement(View, props, children);
+  return { __esModule: true, default: Passthrough, Svg: Passthrough, Circle: Passthrough };
+});
