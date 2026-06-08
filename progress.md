@@ -16,7 +16,7 @@ A living status tracker for the whole Alias workspace: **what is built, what is 
 
 ## Snapshot — 2026-06-08
 
-The **offline core game is playable end-to-end** on-device: `Home → Setup → Game Intro → Gameplay → Round Result → Winner`, covering **Time Score**, **Max Score**, and **sudden-death tie-breaks**, with undo, foul/skip gating, and a drift-free absolute-timestamp timer that auto-ends the round. It runs entirely offline on a bundled 50-word English starter pack, in any of 3 selectable themes. **All gameplay logic is a pure, fully-tested engine** (117 tests green). The game now **survives an app kill and backgrounding**: the session persists on every change and rehydrates on launch (with a migration ladder), an interrupted round re-enters a **Paused** state, leaving the gameplay screen freezes + saves the round (resumable from Home), and Home offers **Resume / New game / Discard**.
+The **offline core game is playable end-to-end** on-device: `Home → Setup → Game Intro → Gameplay → Round Result → Winner`, covering **Time Score**, **Max Score**, and **sudden-death tie-breaks**, with undo, foul/skip gating, and a drift-free absolute-timestamp timer that auto-ends the round. It runs entirely offline on a bundled 50-word English starter pack, in any of 3 selectable themes. **All gameplay logic is a pure, fully-tested engine** (122 tests green). The game now **survives an app kill and backgrounding**: the session persists on every change and rehydrates on launch (with a migration ladder), an interrupted round re-enters a **Paused** state, leaving the gameplay screen freezes + saves the round (resumable from Home), and Home offers **Resume / New game / Discard**.
 
 What's **not** there yet: sound & haptics (the rest of Milestone A's "feel" pass — plumbing decided, assets later), and the breadth of the spec — the Setup, Settings, and Home screens currently expose only a slice, and the menu/library/rules/onboarding screens don't exist. The **backend and shared contracts are scaffolded but dark** (every endpoint returns `NOT_IMPLEMENTED`; no DB tables authored) — correct, since the backend must never gate gameplay and isn't needed until v2.
 
@@ -26,9 +26,9 @@ What's **not** there yet: sound & haptics (the rest of Milestone A's "feel" pass
 | Game engine (rules/scoring/word-draw/timer) | ✅ complete, pure, tested |
 | Themes | ✅ 3 (classic light+dark · arcade · vivid) |
 | Bundled starter pack | ✅ 50 words, English, `builtin` |
-| Tests (app) | ✅ 117 passing / 23 suites |
+| Tests (app) | ✅ 122 passing / 25 suites |
 | Lifecycle: persist + resume-after-kill + background-pause | ✅ persistence, rehydrate, Paused overlay, resumable exit |
-| Sound & haptics | ⬜ dependency not added (next "feel" pass) |
+| Sound & haptics | 🟡 haptics wired (`expo-haptics`); sound is no-op until assets |
 | v1 menu/support screens (Rules, Library, onboarding, full Setup/Settings) | ⬜ / 🟡 |
 | i18n + accessibility pass | ⬜ |
 | Airplane-mode E2E (release gate) | ⬜ no `.maestro/` yet |
@@ -101,9 +101,9 @@ The spec's MVP explicitly requires kill/resume, background handling, basic hapti
 - ✅ **Resume / Discard after kill** — launch rehydrate behind a hydrate gate in `_layout.tsx`; Home offers **Resume / New game / Discard** (confirmed). An interrupted round re-enters the **Paused** state (full-round fallback on a foreground crash, never a 0s forfeit).
 - ✅ **Background lifecycle** (`AppState`, spec §8) — `useGameLifecycle` pauses the round on leaving the foreground (captures remaining); foreground shows a **Paused** overlay and **never auto-resumes** — the tap re-anchors `roundEndTimestamp` via `resumeEndTimestamp`. The ticker is frozen while paused; leaving the gameplay screen (back/swipe/nav) also freezes it.
 - ✅ **Leave-during-round is non-destructive** — iOS swipe-back / Android back / any nav leaves cleanly (no native-stack desync); the `Gameplay` unmount-`pause()` freezes + persists the round so it's resumable from Home. *(A confirm dialog was intentionally dropped: native-stack can't confirm an interactive swipe via public APIs and leaving loses nothing — see [`bug.md`](bug.md) B2.)*
-- ⬜ **Sound + haptics** (spec §11) — add `expo-haptics` (+ audio); wire Correct/Skip/Foul/last-10s/times-up/win; respect OS silent + in-app toggles. *(Next pass: haptics + a SoundManager with drop-in registry; audio assets to follow.)*
-- ⬜ **Last-10s / 5s escalating audio-haptic warning** (TimerRing already has the < 10s visual state).
-- ⬜ **Mis-tap debounce** on action buttons (verify/extend `ActionButtonBar`).
+- 🟡 **Sound + haptics** (spec §11) — `expo-haptics` wired for Correct/Skip/Foul/times-up/win, gated by the in-app Vibration toggle (`src/features/settings/feedback.ts`). **Sound is no-op plumbing** (toggle + call sites present) until bundled audio assets land; expo-audio not added yet.
+- ✅ **Last-10s / 5s escalating warning** — light tick each second over the final 10s, escalating to medium under 5s (haptic; audio when assets land). TimerRing keeps the visual danger state.
+- ✅ **Mis-tap debounce** on action buttons (250ms one-shot guard in Gameplay's `mark`).
 - ⬜ **Surface the buzzer rule** (`hardStop` vs `finishWord`) in the UI (engine already supports it).
 
 ### 2.2 Milestone B — Complete v1 (first shippable release)
@@ -123,7 +123,7 @@ The spec's MVP explicitly requires kill/resume, background handling, basic hapti
 **Menu & support screens:**
 - ⬜ **Home** — add Word Packs/Library, Rules, (Profile placeholder for v2) entries; optional streak/level meta.
 - ⬜ **Rules / How to play** screen.
-- ⬜ **Settings → full spec** — sound/haptics toggles, high-contrast & large-text, left/right-handed layout, default duration & scoring, App (UI) language, **Word-languages** download/remove section.
+- 🟡 **Settings → full spec** — ✅ sound/haptics (Vibration) toggles + left/right-handed layout (`usePrefsStore`, persisted, mirrors the action bar); ⬜ high-contrast & large-text, default duration & scoring, App (UI) language, **Word-languages** download/remove section.
 - ⬜ **Round Result** — optional word-recap list (Correct/Skipped/Foul per word).
 - ⬜ **Winner** — animated confetti, total-rounds-played, **Share results** card via OS share sheet.
 
