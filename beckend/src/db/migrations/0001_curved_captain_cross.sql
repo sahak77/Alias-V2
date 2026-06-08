@@ -1,0 +1,1 @@
+ALTER TABLE "language" ADD CONSTRAINT "language_code_format" CHECK ("language"."code" ~ '^[A-Za-z]{2,3}(-[A-Za-z0-9]{2,8})*$');

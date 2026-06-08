@@ -10,6 +10,7 @@ import { InfraModule } from './infra/infra.module';
 import { DbModule } from './db/db.module';
 import { GenerationModule } from './features/generation/generation.module';
 import { ContentPolicyModule } from './features/content-policy/content-policy.module';
+import { LanguagesModule } from './features/languages/languages.module';
 import { ErrorEnvelopeFilter } from './common/filters/error-envelope.filter';
 
 @Module({
@@ -20,6 +21,7 @@ import { ErrorEnvelopeFilter } from './common/filters/error-envelope.filter';
     DbModule,
     GenerationModule,
     ContentPolicyModule,
+    LanguagesModule,
     // Seams — accounts / catalog / moderation — are intentionally NOT imported.
   ],
   controllers: [AppController],

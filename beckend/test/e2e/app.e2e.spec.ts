@@ -61,4 +61,12 @@ describe('App (e2e) — wiring smoke test', () => {
     expect(res.status).toBe(422);
     expect(res.body).toMatchObject({ ok: false, error: { code: 'VALIDATION' } });
   });
+
+  it('GET /v1/languages is wired and degrades to an empty catalog when the DB is unreachable', async () => {
+    // No Postgres in the test env ⇒ the read fails and the endpoint degrades softly
+    // (the client bundles its own launch set) rather than erroring.
+    const res = await request(app.getHttpServer()).get('/v1/languages');
+    expect(res.status).toBe(200);
+    expect(res.body).toEqual({ languages: [] });
+  });
 });

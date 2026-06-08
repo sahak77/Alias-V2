@@ -8,6 +8,13 @@
       "when": 1780921442689,
       "tag": "0000_silly_spot",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1780926125429,
+      "tag": "0001_curved_captain_cross",
+      "breakpoints": true
     }
   ]
 }
