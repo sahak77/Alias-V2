@@ -121,10 +121,10 @@ The spec's MVP explicitly requires kill/resume, background handling, basic hapti
 > Built on a pure `setupConfig.ts` (config↔engine mapping + presets) and reusable `Stepper`/`Toggle` primitives.
 
 **Menu & support screens:**
-- ⬜ **Home** — add Word Packs/Library, Rules, (Profile placeholder for v2) entries; optional streak/level meta.
-- ⬜ **Rules / How to play** screen.
+- 🟡 **Home** — ✅ Rules ("How to play") entry; ⬜ Word Packs/Library, Profile (v2), streak/level meta.
+- ✅ **Rules / How to play** screen (`app/rules.tsx`, i18n-native).
 - 🟡 **Settings → full spec** — ✅ sound/haptics (Vibration) toggles + left/right-handed layout (`usePrefsStore`, persisted, mirrors the action bar); ⬜ high-contrast & large-text, default duration & scoring, App (UI) language, **Word-languages** download/remove section.
-- ⬜ **Round Result** — optional word-recap list (Correct/Skipped/Foul per word).
+- ✅ **Round Result** — word-recap list (the round's Correct/Skipped/Foul words, empty groups hidden).
 - ⬜ **Winner** — animated confetti, total-rounds-played, **Share results** card via OS share sheet.
 
 **Packs, content & data:**
