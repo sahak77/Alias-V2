@@ -1,4 +1,5 @@
 import { LinearGradient } from 'expo-linear-gradient';
+import { useTranslation } from 'react-i18next';
 import { Pressable, View, type ViewStyle } from 'react-native';
 import { useTheme, useThemedStyles, type GradientStops, type Theme, type ThemeColors } from '@/theme';
 import { chunky3dStyle, gradientProps } from './buttonStyles';
@@ -26,6 +27,7 @@ const LIP = 'rgba(0,0,0,0.28)';
  * on arcade/vivid.
  */
 export function ActionButtonBar({ onCorrect, onSkip, onFoul, skipDisabled, disabled, reversed }: ActionButtonBarProps) {
+  const { t } = useTranslation();
   const { theme } = useTheme();
   const styles = useThemedStyles(makeStyles);
   const soft = theme.decoration?.softTints;
@@ -36,7 +38,7 @@ export function ActionButtonBar({ onCorrect, onSkip, onFoul, skipDisabled, disab
       <ActionButton
         theme={theme}
         style={styles.flex}
-        label="Correct"
+        label={t('game.correct')}
         icon="✓"
         fill={theme.colors.correct}
         labelColor="onCorrect"
@@ -48,7 +50,7 @@ export function ActionButtonBar({ onCorrect, onSkip, onFoul, skipDisabled, disab
       <ActionButton
         theme={theme}
         style={styles.flex}
-        label="Skip"
+        label={t('game.skip')}
         icon="↪"
         fill={theme.colors.skip}
         labelColor="onSkip"
@@ -61,7 +63,7 @@ export function ActionButtonBar({ onCorrect, onSkip, onFoul, skipDisabled, disab
         <ActionButton
           theme={theme}
           style={styles.square}
-          label="Foul"
+          label={t('game.foul')}
           icon="⚑"
           // Classic shows foul as a soft ghost; dark themes use a solid red square.
           fill={soft ? soft.foul : theme.colors.foul}

@@ -1,3 +1,4 @@
+import { useTranslation } from 'react-i18next';
 import { View } from 'react-native';
 import { Button, Card, Chip, Screen, Text } from '@/components/ui';
 import type { ChipTone } from '@/components/ui';
@@ -6,6 +7,7 @@ import { useGameSession } from '../useGameSession';
 
 /** Per-round summary + route to the next step (spec §6.4). */
 export function RoundResult() {
+  const { t } = useTranslation();
   const session = useGameSession((s) => s.session);
   const next = useGameSession((s) => s.next);
   const styles = useThemedStyles(makeStyles);
@@ -20,16 +22,16 @@ export function RoundResult() {
   return (
     <Screen scroll>
       <Text variant="title" style={styles.center}>
-        Round complete
+        {t('result.title')}
       </Text>
       <Text variant="heading" style={[styles.center, { color: team.color }]}>
         {team.name}
       </Text>
 
       <View style={styles.tiles}>
-        <StatTile count={last.correctWordIds.length} label="Correct" tone="correct" />
-        <StatTile count={last.skippedWordIds.length} label="Skipped" tone="skip" />
-        <StatTile count={last.fouledWordIds.length} label="Fouls" tone="foul" />
+        <StatTile count={last.correctWordIds.length} label={t('result.correct')} tone="correct" />
+        <StatTile count={last.skippedWordIds.length} label={t('result.skipped')} tone="skip" />
+        <StatTile count={last.fouledWordIds.length} label={t('result.fouls')} tone="foul" />
       </View>
 
       <Card style={styles.deltaCard}>
@@ -37,11 +39,11 @@ export function RoundResult() {
           {delta >= 0 ? `+${delta}` : `${delta}`}
         </Text>
         <Text variant="body" color="textMuted">
-          New total: {team.score} pts
+          {t('result.newTotal', { count: team.score })}
         </Text>
       </Card>
 
-      <Button title="Continue" size="xl" onPress={next} style={styles.continue} />
+      <Button title={t('result.continue')} size="xl" onPress={next} style={styles.continue} />
     </Screen>
   );
 }

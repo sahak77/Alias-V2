@@ -4,6 +4,7 @@
  * the user taps Resume, which re-anchors the timer from the captured remaining.
  */
 
+import { useTranslation } from 'react-i18next';
 import { View } from 'react-native';
 import { Button, Text } from '@/components/ui';
 import { withAlpha } from '@/utils/color';
@@ -16,18 +17,19 @@ type PausedOverlayProps = {
 };
 
 export function PausedOverlay({ onResume, remainingSec }: PausedOverlayProps) {
+  const { t } = useTranslation();
   const styles = useThemedStyles(makeStyles);
   return (
     <View style={styles.overlay} accessibilityViewIsModal accessibilityLabel="Game paused">
       <View style={styles.body}>
-        <Text variant="display">Paused</Text>
+        <Text variant="display">{t('game.paused')}</Text>
         {remainingSec !== undefined ? (
           <Text variant="heading" color="textMuted">
-            {remainingSec}s left
+            {t('game.secondsLeft', { count: remainingSec })}
           </Text>
         ) : null}
       </View>
-      <Button title="Resume" size="xl" onPress={onResume} style={styles.button} />
+      <Button title={t('game.resume')} size="xl" onPress={onResume} style={styles.button} />
     </View>
   );
 }

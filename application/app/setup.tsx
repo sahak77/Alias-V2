@@ -1,5 +1,6 @@
 import { useRouter } from 'expo-router';
 import { useMemo, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Pressable, TextInput, View } from 'react-native';
 import { Button, Screen, SegmentedControl, Stepper, Text, Toggle } from '@/components/ui';
 import {
@@ -7,7 +8,6 @@ import {
   buildGameConfig,
   MAX_TEAMS,
   PRESET_KEYS,
-  PRESETS,
   SETUP_BOUNDS,
   useGameSession,
   useSetupStore,
@@ -15,24 +15,10 @@ import {
   type BuzzerRule,
   type DescribeMode,
   type GameMode,
+  type PresetKey,
 } from '@/features/game';
 import { buildWordPool, STARTER_EN } from '@/features/packs';
 import { DEFAULT_TEAM_COLORS, useTheme, useThemedStyles, type Theme } from '@/theme';
-
-const MODE_OPTIONS = [
-  { label: 'Time Score', value: 'time' },
-  { label: 'Max Score', value: 'max' },
-] as const satisfies readonly { label: string; value: GameMode }[];
-
-const BUZZER_OPTIONS = [
-  { label: 'Hard stop', value: 'hardStop' },
-  { label: 'Finish word', value: 'finishWord' },
-] as const satisfies readonly { label: string; value: BuzzerRule }[];
-
-const DESCRIBE_OPTIONS = [
-  { label: 'Describe', value: 'describe' },
-  { label: 'Taboo', value: 'taboo' },
-] as const satisfies readonly { label: string; value: DescribeMode }[];
 
 /** Render a score with an explicit sign (and a real minus glyph). */
 const signed = (v: number): string => (v > 0 ? `+${v}` : v < 0 ? `−${Math.abs(v)}` : '0');
@@ -42,10 +28,32 @@ function normalizeName(name: string): string {
 }
 
 export default function SetupScreen() {
+  const { t } = useTranslation();
   const router = useRouter();
   const { theme } = useTheme();
   const styles = useThemedStyles(makeStyles);
   const startGame = useGameSession((s) => s.startGame);
+
+  const presetLabels: Record<PresetKey, string> = {
+    family: t('setup.presetFamily'),
+    party: t('setup.presetParty'),
+    hardcore: t('setup.presetHardcore'),
+  };
+
+  const modeOptions = [
+    { label: t('setup.modeTime'), value: 'time' },
+    { label: t('setup.modeMax'), value: 'max' },
+  ] as const satisfies readonly { label: string; value: GameMode }[];
+
+  const buzzerOptions = [
+    { label: t('setup.buzzerHard'), value: 'hardStop' },
+    { label: t('setup.buzzerFinish'), value: 'finishWord' },
+  ] as const satisfies readonly { label: string; value: BuzzerRule }[];
+
+  const describeOptions = [
+    { label: t('setup.describeDescribe'), value: 'describe' },
+    { label: t('setup.describeTaboo'), value: 'taboo' },
+  ] as const satisfies readonly { label: string; value: DescribeMode }[];
 
   const config = useSetupStore((s) => s.config);
   const teams = useSetupStore((s) => s.teams);
@@ -84,11 +92,11 @@ export default function SetupScreen() {
 
   return (
     <Screen scroll>
-      <Text variant="title">New game</Text>
+      <Text variant="title">{t('setup.title')}</Text>
 
       <View style={styles.section}>
         <Text variant="label" color="textMuted">
-          Preset
+          {t('setup.preset')}
         </Text>
         <View style={styles.presetRow}>
           {PRESET_KEYS.map((key) => {
@@ -98,12 +106,12 @@ export default function SetupScreen() {
                 key={key}
                 accessibilityRole="button"
                 accessibilityState={{ selected: active }}
-                accessibilityLabel={`${PRESETS[key].label} preset`}
+                accessibilityLabel={t('setup.presetA11y', { label: presetLabels[key] })}
                 onPress={() => applyPreset(key)}
                 style={[styles.preset, active && styles.presetActive]}
               >
                 <Text variant="label" color={active ? 'onPrimary' : 'text'}>
-                  {PRESETS[key].label}
+                  {presetLabels[key]}
                 </Text>
               </Pressable>
             );
@@ -113,21 +121,21 @@ export default function SetupScreen() {
 
       <View style={styles.section}>
         <Text variant="label" color="textMuted">
-          Teams
+          {t('setup.teams')}
         </Text>
         {teams.map((team, i) => (
           <View key={team.id} style={styles.section}>
             <View style={styles.teamRow}>
               <Pressable
                 accessibilityRole="button"
-                accessibilityLabel={`Change ${team.name} color`}
+                accessibilityLabel={t('setup.changeColor', { name: team.name })}
                 onPress={() => setColorPickerFor((cur) => (cur === team.id ? null : team.id))}
                 style={[styles.dot, { backgroundColor: team.color }]}
               />
               <TextInput
                 value={team.name}
                 onChangeText={(name) => renameTeam(team.id, name)}
-                placeholder="Team name"
+                placeholder={t('setup.teamNamePlaceholder')}
                 placeholderTextColor={theme.colors.textMuted}
                 maxLength={20}
                 style={[
@@ -136,7 +144,7 @@ export default function SetupScreen() {
                 ]}
               />
               {teams.length > 2 ? (
-                <Pressable accessibilityRole="button" accessibilityLabel={`Remove ${team.name}`} hitSlop={8} onPress={() => removeTeam(team.id)} style={styles.remove}>
+                <Pressable accessibilityRole="button" accessibilityLabel={t('setup.removeTeam', { name: team.name })} hitSlop={8} onPress={() => removeTeam(team.id)} style={styles.remove}>
                   <Text variant="heading" color="textMuted">
                     ×
                   </Text>
@@ -149,7 +157,7 @@ export default function SetupScreen() {
                   <Pressable
                     key={color}
                     accessibilityRole="button"
-                    accessibilityLabel={`Color ${color}`}
+                    accessibilityLabel={t('setup.colorSwatch', { color })}
                     onPress={() => {
                       setTeamColor(team.id, color);
                       setColorPickerFor(null);
@@ -167,24 +175,24 @@ export default function SetupScreen() {
         ))}
         {dupNames ? (
           <Text variant="caption" color="textMuted">
-            Two teams share a name — allowed, but they will be hard to tell apart.
+            {t('setup.duplicateWarning')}
           </Text>
         ) : null}
         {teams.length < MAX_TEAMS ? (
-          <Button title="Add team" variant="secondary" onPress={() => addTeam(colorAt(teams.length))} />
+          <Button title={t('setup.addTeam')} variant="secondary" onPress={() => addTeam(colorAt(teams.length))} />
         ) : null}
       </View>
 
       <View style={styles.section}>
         <Text variant="label" color="textMuted">
-          Game mode
+          {t('setup.gameMode')}
         </Text>
-        <SegmentedControl options={MODE_OPTIONS} value={config.mode} onChange={(mode) => patchConfig({ mode })} />
+        <SegmentedControl options={modeOptions} value={config.mode} onChange={(mode) => patchConfig({ mode })} />
       </View>
 
       <View style={styles.section}>
         <Text variant="label" color="textMuted">
-          Round timer
+          {t('setup.roundTimer')}
         </Text>
         <Stepper
           value={config.roundDurationSec}
@@ -197,7 +205,7 @@ export default function SetupScreen() {
       {config.mode === 'time' ? (
         <View style={styles.section}>
           <Text variant="label" color="textMuted">
-            Rounds per team
+            {t('setup.roundsPerTeam')}
           </Text>
           <Stepper value={config.roundCount} onChange={(roundCount) => patchConfig({ roundCount })} {...SETUP_BOUNDS.roundCount} />
         </View>
@@ -205,13 +213,13 @@ export default function SetupScreen() {
         <>
           <View style={styles.section}>
             <Text variant="label" color="textMuted">
-              Target score
+              {t('setup.targetScore')}
             </Text>
             <Stepper value={config.maxScore} onChange={(maxScore) => patchConfig({ maxScore })} {...SETUP_BOUNDS.maxScore} />
           </View>
           <Toggle
-            label="Finish the rotation"
-            hint="Let every team complete the round before declaring a winner."
+            label={t('setup.finishRotation')}
+            hint={t('setup.finishRotationHint')}
             value={config.finishRotationOnMax}
             onValueChange={(finishRotationOnMax) => patchConfig({ finishRotationOnMax })}
           />
@@ -220,27 +228,27 @@ export default function SetupScreen() {
 
       <View style={styles.section}>
         <Text variant="label" color="textMuted">
-          Scoring
+          {t('setup.scoring')}
         </Text>
         <View style={styles.scoreRow}>
-          <Text variant="body">Correct word</Text>
+          <Text variant="body">{t('setup.correctWord')}</Text>
           <Stepper value={config.correctScore} onChange={(correctScore) => patchConfig({ correctScore })} {...SETUP_BOUNDS.correctScore} format={signed} style={styles.scoreStepper} />
         </View>
         <View style={styles.scoreRow}>
-          <Text variant="body">Skip</Text>
+          <Text variant="body">{t('setup.skip')}</Text>
           <Stepper value={config.skipScore} onChange={(skipScore) => patchConfig({ skipScore })} {...SETUP_BOUNDS.skipScore} format={signed} style={styles.scoreStepper} />
         </View>
-        <Toggle label="Penalize fouls" value={config.foulEnabled} onValueChange={(foulEnabled) => patchConfig({ foulEnabled })} />
+        <Toggle label={t('setup.penalizeFouls')} value={config.foulEnabled} onValueChange={(foulEnabled) => patchConfig({ foulEnabled })} />
         {config.foulEnabled ? (
           <View style={styles.scoreRow}>
-            <Text variant="body">Foul</Text>
+            <Text variant="body">{t('setup.foul')}</Text>
             <Stepper value={config.foulScore} onChange={(foulScore) => patchConfig({ foulScore })} {...SETUP_BOUNDS.foulScore} format={signed} style={styles.scoreStepper} />
           </View>
         ) : null}
-        <Toggle label="Limit skips per round" value={config.skipLimitEnabled} onValueChange={(skipLimitEnabled) => patchConfig({ skipLimitEnabled })} />
+        <Toggle label={t('setup.limitSkips')} value={config.skipLimitEnabled} onValueChange={(skipLimitEnabled) => patchConfig({ skipLimitEnabled })} />
         {config.skipLimitEnabled ? (
           <View style={styles.scoreRow}>
-            <Text variant="body">Max skips</Text>
+            <Text variant="body">{t('setup.maxSkips')}</Text>
             <Stepper value={config.skipLimit} onChange={(skipLimit) => patchConfig({ skipLimit })} {...SETUP_BOUNDS.skipLimit} style={styles.scoreStepper} />
           </View>
         ) : null}
@@ -248,33 +256,32 @@ export default function SetupScreen() {
 
       <View style={styles.section}>
         <Text variant="label" color="textMuted">
-          When the timer ends
+          {t('setup.timerEnds')}
         </Text>
-        <SegmentedControl options={BUZZER_OPTIONS} value={config.buzzerRule} onChange={(buzzerRule) => patchConfig({ buzzerRule })} />
+        <SegmentedControl options={buzzerOptions} value={config.buzzerRule} onChange={(buzzerRule) => patchConfig({ buzzerRule })} />
         <Text variant="caption" color="textMuted">
-          {config.buzzerRule === 'hardStop'
-            ? 'Hard stop: the current word is discarded at zero.'
-            : 'Finish the word: one last call on the on-screen word after the buzzer.'}
+          {config.buzzerRule === 'hardStop' ? t('setup.buzzerHardHint') : t('setup.buzzerFinishHint')}
         </Text>
       </View>
 
       <View style={styles.section}>
         <Text variant="label" color="textMuted">
-          Describe mode
+          {t('setup.describeMode')}
         </Text>
-        <SegmentedControl options={DESCRIBE_OPTIONS} value={config.describeMode} onChange={(describeMode) => patchConfig({ describeMode })} />
+        <SegmentedControl options={describeOptions} value={config.describeMode} onChange={(describeMode) => patchConfig({ describeMode })} />
       </View>
 
       <Text variant="caption" color="textMuted">
-        {pool.wordIds.length} words · {STARTER_EN.title} pack
+        {t('setup.poolInfo', { count: pool.wordIds.length, pack: STARTER_EN.title })}
       </Text>
       {!canStart ? (
         <Text variant="caption" color="danger">
+          {/* TODO(i18n): engine validation should return codes to translate */}
           {issues[0]}
         </Text>
       ) : null}
 
-      <Button title="Start Game" size="xl" disabled={!canStart} onPress={start} style={styles.start} />
+      <Button title={t('setup.start')} size="xl" disabled={!canStart} onPress={start} style={styles.start} />
     </Screen>
   );
 }

@@ -1,3 +1,4 @@
+import '@/i18n'; // initialize i18next once, before any screen renders
 import { QueryClientProvider } from '@tanstack/react-query';
 import { Stack } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';

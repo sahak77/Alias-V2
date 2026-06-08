@@ -1,5 +1,6 @@
 import { useRouter } from 'expo-router';
 import { useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import { View } from 'react-native';
 import { Button, Card, Screen, Text } from '@/components/ui';
 import { feedback } from '@/features/settings';
@@ -9,6 +10,7 @@ import { useGameSession } from '../useGameSession';
 
 /** Celebration + final scoreboard (spec §6.5). */
 export function Winner() {
+  const { t } = useTranslation();
   const session = useGameSession((s) => s.session);
   const restart = useGameSession((s) => s.restart);
   const quit = useGameSession((s) => s.quit);
@@ -35,7 +37,7 @@ export function Winner() {
         🎉🏆🎉
       </Text>
       <Text variant="title" style={[styles.center, champ ? { color: champ.color } : null]}>
-        {champ ? `${champ.name} wins!` : 'Game over'}
+        {champ ? t('winner.wins', { name: champ.name }) : t('winner.gameOver')}
       </Text>
 
       <Card>
@@ -54,8 +56,8 @@ export function Winner() {
       </Card>
 
       <View style={styles.actions}>
-        <Button title="New Game" variant="secondary" onPress={onNewGame} style={styles.flex} />
-        <Button title="Restart" onPress={restart} style={styles.flex} />
+        <Button title={t('winner.newGame')} variant="secondary" onPress={onNewGame} style={styles.flex} />
+        <Button title={t('winner.restart')} onPress={restart} style={styles.flex} />
       </View>
     </Screen>
   );

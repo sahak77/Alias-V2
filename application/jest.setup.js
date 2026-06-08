@@ -29,3 +29,10 @@ jest.mock('expo-haptics', () => ({
   NotificationFeedbackType: { Success: 'success', Warning: 'warning', Error: 'error' },
   ImpactFeedbackStyle: { Light: 'light', Medium: 'medium', Heavy: 'heavy' },
 }));
+
+// expo-localization has no native module under Jest — pin the locale to English.
+jest.mock('expo-localization', () => ({ getLocales: () => [{ languageCode: 'en' }] }));
+
+// Initialize i18next so components calling useTranslation() resolve real English
+// strings in tests (otherwise t() returns the raw key).
+require('./src/i18n');

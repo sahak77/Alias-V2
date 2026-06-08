@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useRef } from 'react';
+import { useTranslation } from 'react-i18next';
 import { View } from 'react-native';
 import { ActionButtonBar, Button, Screen, Text, TimerRing, WordCard } from '@/components/ui';
 import { feedback, usePrefsStore } from '@/features/settings';
@@ -13,6 +14,7 @@ const MISTAP_MS = 250;
 
 /** The hot-path gameplay screen (spec §6.3). */
 export function Gameplay() {
+  const { t } = useTranslation();
   const session = useGameSession((s) => s.session);
   const cardsById = useGameSession((s) => s.cardsById);
   const pausedRemainingMs = useGameSession((s) => s.pausedRemainingMs);
@@ -80,14 +82,14 @@ export function Gameplay() {
           <View style={[styles.dot, { backgroundColor: team?.color }]} />
           <Text variant="label">{team?.name}</Text>
         </View>
-        <Text variant="heading">{team ? liveTeamScore(session, team.id) : 0} pts</Text>
+        <Text variant="heading">{t('common.points', { count: team ? liveTeamScore(session, team.id) : 0 })}</Text>
       </View>
 
       <View style={styles.center}>
         <TimerRing remainingSec={remaining} totalSec={totalSec} />
         <WordCard word={card?.word ?? '—'} taboo={taboo} />
         <Button
-          title="Undo last"
+          title={t('game.undoLast')}
           variant="ghost"
           onPress={undo}
           disabled={round.marks.length === 0}
