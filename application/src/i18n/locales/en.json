@@ -67,7 +67,9 @@
     "describeMode": "Describe mode",
     "describeDescribe": "Describe",
     "describeTaboo": "Taboo",
-    "poolInfo": "{{count}} words · {{pack}} pack",
+    "wordPacks": "Word packs",
+    "newPack": "New pack",
+    "poolInfo": "{{count}} words in your pool",
     "start": "Start Game"
   },
   "settings": {

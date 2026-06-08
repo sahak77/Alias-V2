@@ -17,7 +17,7 @@ import {
   type GameMode,
   type PresetKey,
 } from '@/features/game';
-import { buildWordPool, STARTER_EN } from '@/features/packs';
+import { buildWordPool, libraryPacks, resolveSelectedPacks, usePackStore } from '@/features/packs';
 import { DEFAULT_TEAM_COLORS, useTheme, useThemedStyles, type Theme } from '@/theme';
 
 /** Render a score with an explicit sign (and a real minus glyph). */
@@ -64,12 +64,24 @@ export default function SetupScreen() {
   const renameTeam = useSetupStore((s) => s.renameTeam);
   const setTeamColor = useSetupStore((s) => s.setTeamColor);
 
+  const customPacks = usePackStore((s) => s.customPacks);
+  const selectedPackIds = usePackStore((s) => s.selectedPackIds);
+  const toggleSelected = usePackStore((s) => s.toggleSelected);
+
   const [colorPickerFor, setColorPickerFor] = useState<string | null>(null);
 
   const palette = theme.decoration?.teamColors ?? DEFAULT_TEAM_COLORS;
   const colorAt = (i: number): string => palette[i % palette.length] ?? '#888888';
 
-  const pool = useMemo(() => buildWordPool([STARTER_EN]), []);
+  // The pool is built from the selected packs (falling back to the bundled starter
+  // when none are chosen), so a game always has a playable pool — offline-safe.
+  const library = useMemo(() => libraryPacks(customPacks), [customPacks]);
+  const resolvedPacks = useMemo(
+    () => resolveSelectedPacks(customPacks, selectedPackIds),
+    [customPacks, selectedPackIds],
+  );
+  const selectedIds = useMemo(() => new Set(resolvedPacks.map((p) => p.id)), [resolvedPacks]);
+  const pool = useMemo(() => buildWordPool(resolvedPacks), [resolvedPacks]);
   const gameConfig = buildGameConfig(config);
   const issues = validateSetup({ config: gameConfig, teams, poolSize: pool.wordIds.length });
   const canStart = issues.length === 0;
@@ -86,7 +98,7 @@ export default function SetupScreen() {
   }, [teams]);
 
   const start = () => {
-    startGame(gameConfig, teams, [STARTER_EN]);
+    startGame(gameConfig, teams, resolvedPacks);
     router.push('/game');
   };
 
@@ -271,8 +283,34 @@ export default function SetupScreen() {
         <SegmentedControl options={describeOptions} value={config.describeMode} onChange={(describeMode) => patchConfig({ describeMode })} />
       </View>
 
+      <View style={styles.section}>
+        <Text variant="label" color="textMuted">
+          {t('setup.wordPacks')}
+        </Text>
+        <View style={styles.presetRow}>
+          {library.map((pack) => {
+            const selected = selectedIds.has(pack.id);
+            return (
+              <Pressable
+                key={pack.id}
+                accessibilityRole="button"
+                accessibilityState={{ selected }}
+                accessibilityLabel={pack.title}
+                onPress={() => toggleSelected(pack.id)}
+                style={[styles.preset, selected && styles.presetActive]}
+              >
+                <Text variant="label" color={selected ? 'onPrimary' : 'text'}>
+                  {pack.title}
+                </Text>
+              </Pressable>
+            );
+          })}
+        </View>
+        <Button title={t('setup.newPack')} variant="ghost" onPress={() => router.push('/pack-editor')} />
+      </View>
+
       <Text variant="caption" color="textMuted">
-        {t('setup.poolInfo', { count: pool.wordIds.length, pack: STARTER_EN.title })}
+        {t('setup.poolInfo', { count: pool.wordIds.length })}
       </Text>
       {!canStart ? (
         <Text variant="caption" color="danger">
