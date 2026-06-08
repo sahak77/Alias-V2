@@ -12,7 +12,7 @@ jest.mock('expo-router', () => ({
 }));
 
 // eslint-disable-next-line import/first -- imported after the expo-router mock is registered
-import PackEditorScreen from './pack-editor';
+import PackEditorScreen from '../app/pack-editor';
 
 const EDIT_PACK: Pack = {
   id: 'custom.edit',

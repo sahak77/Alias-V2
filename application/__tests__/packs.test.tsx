@@ -8,7 +8,7 @@ const mockPush = jest.fn();
 jest.mock('expo-router', () => ({ useRouter: () => ({ push: mockPush, back: jest.fn() }) }));
 
 // eslint-disable-next-line import/first -- imported after the expo-router mock is registered
-import PacksScreen from './packs';
+import PacksScreen from '../app/packs';
 
 const PACK: Pack = {
   id: 'custom.x',

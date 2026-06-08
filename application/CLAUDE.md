@@ -255,4 +255,5 @@ it('calls onPress when tapped', () => {
 - Add a dependency without checking its size and native (config-plugin) impact.
 - Leave `console.log` in committed code.
 - Put business logic in `app/` route files — keep screens thin.
+- Put **test files in `app/`** — Expo Router bundles every file there as a route, which drags test-only deps (e.g. `@testing-library/react-native` → `require('console')`) into the app bundle and breaks startup. Route-screen tests live in `__tests__/` (import the screen via `../app/<name>`); feature/util tests co-locate in `src/`.
 - Commit secrets, API keys, or `.env` files.
