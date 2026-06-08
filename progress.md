@@ -18,7 +18,7 @@ A living status tracker for the whole Alias workspace: **what is built, what is 
 
 The **offline core game is playable end-to-end** on-device: `Home → Setup → Game Intro → Gameplay → Round Result → Winner`, covering **Time Score**, **Max Score**, and **sudden-death tie-breaks**, with undo, foul/skip gating, and a drift-free absolute-timestamp timer that auto-ends the round. It runs entirely offline on a bundled 50-word English starter pack, in any of 3 selectable themes. **All gameplay logic is a pure, fully-tested engine** (129 tests green). The game now **survives an app kill and backgrounding**: the session persists on every change and rehydrates on launch (with a migration ladder), an interrupted round re-enters a **Paused** state, leaving the gameplay screen freezes + saves the round (resumable from Home), and Home offers **Resume / New game / Discard**.
 
-Setup is now full-spec (scoring/presets/buzzer/describe-mode, persisted defaults), **haptics** are wired, **all strings are i18n'd** (English end-to-end), and there's a **How-to-play** screen + a polished **Winner** (confetti/share). What's **not** there yet: bundled **sound assets** (audio is no-op plumbing until they land), the **pack library** + word-language picker, first-launch **onboarding**, the accessibility/Settings remainder (high-contrast, large-text, languages), and the **airplane-mode Maestro E2E** release gate. The **backend and shared contracts are scaffolded but dark** (every endpoint returns `NOT_IMPLEMENTED`; no DB tables authored) — correct, since the backend must never gate gameplay and isn't needed until v2.
+Setup is now full-spec (scoring/presets/buzzer/describe-mode, persisted defaults), **haptics** are wired, **all strings are i18n'd** (English end-to-end), and there's a **How-to-play** screen + a polished **Winner** (confetti/share). What's **not** there yet: bundled **sound assets** (audio is no-op plumbing until they land), the **pack library** + word-language picker, first-launch **onboarding**, the accessibility/Settings remainder (high-contrast, large-text, languages), and a standalone-build run of the **Maestro E2E** in true airplane mode (the flows pass in dev). The **backend and shared contracts are scaffolded but dark** (every endpoint returns `NOT_IMPLEMENTED`; no DB tables authored) — correct, since the backend must never gate gameplay and isn't needed until v2.
 
 | Area | State |
 | --- | --- |
@@ -31,7 +31,7 @@ Setup is now full-spec (scoring/presets/buzzer/describe-mode, persisted defaults
 | Sound & haptics | 🟡 haptics wired (`expo-haptics`); sound is no-op until assets |
 | v1 menu/support screens (Rules, Library, onboarding, full Setup/Settings) | ⬜ / 🟡 |
 | i18n + accessibility pass | 🟡 i18n foundation done (English E2E); a11y pass + RTL audit pending |
-| Airplane-mode E2E (release gate) | ⬜ no `.maestro/` yet |
+| Airplane-mode E2E (release gate) | 🟡 `.maestro/` flows pass (full game, dev); airplane-mode run needs a standalone build |
 | Backend service | 🟡 scaffolded, all endpoints `NOT_IMPLEMENTED` |
 | Backend DB | 🟡 tooling only — **0 tables authored** |
 | `@alias/contracts` | ✅ scaffolded (errors, generation, content-policy, pack, locale) |
@@ -141,7 +141,7 @@ The spec's MVP explicitly requires kill/resume, background handling, basic hapti
 - ⬜ Streaks / combo multiplier + **Golden Word**.
 
 **Release gate:**
-- ⬜ **Maestro airplane-mode E2E** (`.maestro/`) — a full game on a fresh install with no network. This is the offline-first **release gate**.
+- 🟡 **Maestro airplane-mode E2E** (`.maestro/`) — `smoke.yaml` + `offline-full-game.yaml` (launch → full game → Winner) authored and **passing** against the dev build; the flows make no network calls. The true airplane-mode run needs a standalone build (set `appId`, drop `openLink`, enable `setAirplaneMode`) — documented in [`.maestro/README.md`](application/.maestro/README.md) and wired into CI before release.
 
 ### 2.3 Milestone C — v2 features (mobile) + backend lights up
 
