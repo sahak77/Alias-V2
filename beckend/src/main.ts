@@ -1,6 +1,8 @@
 // OTel SDK MUST load before anything it auto-instruments (HTTP, pg, redis). It is
 // a no-op without an OTLP endpoint, so this is safe on a fresh, offline boot.
 import './infra/otel';
+// Sentry error reporting (errors only; OTel owns tracing). No-op without SENTRY_DSN.
+import './infra/sentry';
 import 'reflect-metadata';
 
 import { NestFactory } from '@nestjs/core';

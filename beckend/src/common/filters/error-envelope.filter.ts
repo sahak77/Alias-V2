@@ -1,4 +1,5 @@
 import { ArgumentsHost, Catch, ExceptionFilter, HttpException, Logger } from '@nestjs/common';
+import * as Sentry from '@sentry/node';
 import { ZodValidationException } from 'nestjs-zod';
 import type { FastifyReply } from 'fastify';
 import type { ErrorEnvelope } from '@alias/contracts';
@@ -68,7 +69,10 @@ export class ErrorEnvelopeFilter implements ExceptionFilter {
       };
     }
 
-    // Unknown error: log it backstage, but return a generic envelope to the client.
+    // Unknown error: report it backstage (NestJS already swallowed it into this 500,
+    // so Sentry won't see it otherwise; no-op when SENTRY_DSN is unset), log it, and
+    // return a generic envelope to the client — never leaking the cause.
+    Sentry.captureException(exception);
     this.logger.error(exception instanceof Error ? (exception.stack ?? exception.message) : exception);
     return {
       ok: false,

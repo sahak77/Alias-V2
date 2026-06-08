@@ -15,8 +15,16 @@ export const loggerOptions: Params = {
     redact: {
       // `x-attestation` carries the anti-abuse device token; bracket-quote it because
       // the header name has a hyphen. `theme` lives in the request body, which
-      // autoLogging does not serialize — but never add a body serializer that would.
-      paths: ['req.headers.authorization', 'req.headers.cookie', 'req.headers["x-attestation"]'],
+      // autoLogging does not serialize — the body paths are belt-and-suspenders in
+      // case a body serializer is ever added.
+      paths: [
+        'req.headers.authorization',
+        'req.headers.cookie',
+        'req.headers["x-attestation"]',
+        'req.headers["x-byo-key"]',
+        'req.body.theme',
+        'req.body.prompt',
+      ],
       remove: true,
     },
     autoLogging: true,
