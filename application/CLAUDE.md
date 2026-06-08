@@ -62,25 +62,25 @@ Feature-first. Screens are thin; logic lives in features. `app/` holds routes on
 ```
 application/
 ├── app/                        # Expo Router routes — screens ONLY, default exports required
-│   ├── (tabs)/                 # Tab group
-│   │   ├── _layout.tsx
-│   │   └── index.tsx
-│   ├── _layout.tsx             # Root layout (providers go here)
+│   ├── _layout.tsx             # Root layout: providers + launch hydrate gate + AppState lifecycle
+│   ├── index.tsx               # Home (Play / Resume / New game / Discard / Settings)
+│   ├── setup.tsx               # New-game configuration (teams, mode, scoring, presets…)
+│   ├── game.tsx                # In-game status router: intro → playing → roundResult → winner
+│   ├── settings.tsx            # Theme/appearance (full Settings is still pending)
 │   └── +not-found.tsx
 ├── src/
-│   ├── components/             # Shared, presentational, reusable components
-│   │   └── ui/                 # Primitives: Button, Text, Card, Input...
+│   ├── components/ui/          # Themed primitives: Text, Button, Card, Screen, WordCard,
+│   │                           #   TimerRing, ActionButtonBar, SegmentedControl, Chip, Stepper, Toggle
 │   ├── features/               # Self-contained feature modules
-│   │   └── auth/
-│   │       ├── components/     # Feature-specific UI
-│   │       ├── hooks/          # useLogin, useSession...
-│   │       ├── api/            # Query/mutation hooks + endpoints
-│   │       ├── schemas.ts      # Zod schemas
-│   │       └── store.ts        # Feature Zustand store (if needed)
-│   ├── hooks/                  # Cross-feature hooks
-│   ├── lib/                    # Clients & config (apiClient, queryClient, storage, config)
-│   ├── stores/                 # Global Zustand stores
-│   ├── theme/                  # Design tokens: colors, spacing, typography, radii
+│   │   ├── game/               # The core game (the product)
+│   │   │   ├── engine.ts · types.ts · scoring.ts · timer.ts · wordDraw.ts   # PURE engine — no React/IO, fully tested
+│   │   │   ├── useGameSession.ts · useRoundClock.ts · useGameLifecycle.ts   # React/Zustand glue (injects the wall clock)
+│   │   │   ├── persistence.ts · setupConfig.ts · useSetupStore.ts           # resume-after-kill + persisted Setup defaults
+│   │   │   ├── screens/        # Status screens: GameIntro, Gameplay, RoundResult, Winner
+│   │   │   └── components/     # Feature-only UI (e.g. PausedOverlay)
+│   │   └── packs/              # Pack → word-pool adapter (pool.ts) + bundled starter (data/)
+│   ├── lib/                    # Dormant network seam: apiClient, queryClient, config, storage
+│   ├── theme/                  # Multi-theme system: tokens, themes, registry, store, provider
 │   ├── types/                  # Shared types
 │   └── utils/                  # Pure, side-effect-free helpers
 ├── assets/                     # Fonts, images, icons
@@ -90,7 +90,9 @@ application/
 └── tsconfig.json
 ```
 
-**Rule:** if code is used by one feature, it lives in that feature. Promote to `src/components` or `src/hooks` only when a second feature needs it.
+**Architecture note:** the game is a **pure, deterministic engine** (every transition takes `now`/`rng` as args — no clock or IO inside) with a **thin React/Zustand glue** layer that supplies `Date.now()` and persistence. Keep new game logic in the pure engine and test it there; the glue and screens stay declarative. Network-backed features (future) add `api/` (Query hooks) + `schemas.ts` per the Networking section.
+
+**Rule:** if code is used by one feature, it lives in that feature. Promote to `src/components` or a new `src/hooks` only when a second feature needs it. (`src/stores` and `src/hooks` don't exist yet — create them when something genuinely cross-feature appears.)
 
 ---
 
