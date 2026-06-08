@@ -33,7 +33,7 @@ Setup is now full-spec (scoring/presets/buzzer/describe-mode, persisted defaults
 | i18n + accessibility pass | 🟡 i18n foundation done (English E2E); a11y pass + RTL audit pending |
 | Airplane-mode E2E (release gate) | 🟡 `.maestro/` flows pass (full game, dev); airplane-mode run needs a standalone build |
 | Backend service | 🟡 scaffolded, all endpoints `NOT_IMPLEMENTED` |
-| Backend DB | 🟡 tooling only — **0 tables authored** |
+| Backend DB | 🟡 **schema authored** (8 tables + enums, migration `0000` + seed); migrate/seed run against local Postgres |
 | `@alias/contracts` | ✅ scaffolded (errors, generation, content-policy, pack, locale) |
 
 ---
@@ -82,7 +82,7 @@ Flat Expo Router stack; the whole turn flow is one status-driven route (no mid-r
 - ✅ NestJS 11 on Fastify, Node 24; boots with **zero outbound connections** (offline-first verified).
 - ✅ `POST /v1/generate` + `GET /v1/content-policy/:locale` wired → **stub bodies return `NOT_IMPLEMENTED`**; `GET /health` live.
 - ✅ Real error-envelope exception filter + global `ZodValidationPipe`; attestation/budget **guards** + content-gate **interceptor** are pass-through skeletons; infra clients (Redis/R2/LLM) are env-gated stubs; `infra/normalize.ts` is real (RN-safe). Seams `accounts`/`catalog`/`moderation` are empty placeholders.
-- 🟡 **DB = tooling only** — Drizzle + drizzle-kit + lazy `pg` client + docker-compose Postgres + empty schema barrel + seed stub. **No tables authored** (`db:generate` reports 0 tables).
+- 🟡 **DB schema authored** — the 8 v2 app-domain tables + 10 enums + indexes/FKs in `src/db/schema/`, first migration `0000_silly_spot.sql` (+ `pg_trgm`), and an idempotent `seed.ts` (content_policy + language catalog + official account + starter pack). `db:migrate`/`db:seed` run against the local Postgres (Docker). *(See §3.2 for the table tracker.)*
 - ✅ Test scaffolding present (`test/e2e`, `test/msw`, `test/redaction.fixture.test.ts`, `setup.ts`).
 
 ### 1.8 Shared contracts (`packages/contracts/`) — `v2`
@@ -195,20 +195,21 @@ The spec's MVP explicitly requires kill/resume, background handling, basic hapti
 - ✅ `@alias/contracts` (error envelope incl. `OFFLINE`, `Generation*`, `ContentPolicy`, `Pack`, `Locale` open BCP-47) consumed by app + server via `file:`.
 - ✅ Test scaffolding (e2e through the real pipeline, MSW, the **blocking** redaction fixture).
 
-### 3.2 Database — author schema + first migration + seed  ⟵ immediate backend next-pass
-The full v2 model is authored in one pass (locked db-setup decision) so it's reviewed/stable from day one; most *mutating* endpoints stay deferred. `db:generate` → `db:migrate` (**never `push`**); `pg_trgm`; per-locale `tsvector` chosen at write time; records carry `schema_version`.
+### 3.2 Database — schema + first migration + seed  ✅ authored *(migrate/seed run against the local Postgres)*
+The full v2 model is **authored** in one pass (locked db-setup decision) so it's reviewed/stable from day one; most *mutating* endpoints stay deferred (§3.3). Drizzle schema in `src/db/schema/` (per-table files), first migration **`0000_silly_spot.sql`** generated via `db:generate` (+ `pg_trgm` prepended for the trigram Discover index), idempotent `seed.ts`. Verified by `db:generate` + `typecheck` + `lint` + the offline-boot tests; **`db:migrate`/`db:seed` run against a local Postgres (`docker compose up -d`)** — not exercised in this env (no Docker). `content_hash` is a plain index (not unique, per db §5.2); `search_vector` is a plain `tsvector` + GIN index populated by the deferred Discover path; per-locale regconfig (IMMUTABLE wrapper) lands with Discover.
 
-| Table | First consumed by | Phase | Status |
+| Table | First consumed by | Phase | Schema |
 | --- | --- | --- | --- |
-| `content_policy` | content gate / OTA policy (firm-v2 reads it) | `v2` | ⬜ |
-| `language` | `GET /v1/languages` → first-run + change-language pickers | **`v1` onboarding** | ⬜ |
-| `published_pack` | official-packs catalog **read/download**; community publish/Discover | **`v1` read** / `v2` write | ⬜ |
-| `install` · `rating` | install count + ratings on Discover | `v2` | ⬜ |
-| `report` · `moderation_verdict` | reports + moderation queue (fail-closed, append-only) | `v2` (catalog ships) | ⬜ |
-| `account` (+ Better Auth `auth_*`) | accounts / Profile / publish attribution | `v2` (publishing) | ⬜ |
+| `content_policy` | content gate / OTA policy (firm-v2 reads it) | `v2` | ✅ |
+| `language` | `GET /v1/languages` → first-run + change-language pickers | **`v1` onboarding** | ✅ |
+| `published_pack` | official-packs catalog **read/download**; community publish/Discover | **`v1` read** / `v2` write | ✅ |
+| `install` · `rating` | install count + ratings on Discover | `v2` | ✅ |
+| `report` · `moderation_verdict` | reports + moderation queue (fail-closed, append-only) | `v2` (catalog ships) | ✅ |
+| `account` | accounts / Profile / publish attribution | `v2` (publishing) | ✅ |
+| Better Auth `auth_*` (`user`/`session`/…) | login/session | `v2` (publishing) | ⬜ (generated by its CLI when auth lands) |
 
-- ⬜ **Enums** (db §4): `account_status` · `account_role` · `content_rating` (`standard`\|`adult`) · `pack_source` · `publish_status` · `moderation_decision`/`moderation_actor` · `report_reason`/`report_status` · `text_direction`.
-- ⬜ **Seed** (`db:seed`): launch-locale `content_policy` rows, the `language` catalog (en/es/fr/de/pt), and the **official standard packs** (incl. the bundled starter's content) as first-party `published_pack` rows under an `official` account.
+- ✅ **Enums** (db §4): `account_status` · `account_role` · `content_rating` (`standard`\|`adult`) · `pack_source` · `publish_status` · `moderation_decision`/`moderation_actor` · `report_reason`/`report_status` · `text_direction`.
+- ✅ **Seed** (`db:seed`, idempotent): launch-locale `content_policy` rows, the `language` catalog (en/es/fr/de/pt), the first-party `official` account, and the official **starter** `published_pack` (metadata; word blobs come with the R2 path). `account.auth_user_id` stays nullable + FK-less until Better Auth lands.
 
 ### 3.3 Feature build-order (endpoints/logic — tables from §3.2)
 1. ⬜ **`content_policy` read path** (R2 + OTA `latest.json`) — the one table firm-v2 reads. `v2`
