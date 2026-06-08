@@ -14,11 +14,11 @@ A living status tracker for the whole Alias workspace: **what is built, what is 
 
 ---
 
-## Snapshot — 2026-06-06
+## Snapshot — 2026-06-08
 
-The **offline core game is playable end-to-end** on-device: `Home → Setup → Game Intro → Gameplay → Round Result → Winner`, covering **Time Score**, **Max Score**, and **sudden-death tie-breaks**, with undo, foul/skip gating, and a drift-free absolute-timestamp timer that auto-ends the round. It runs entirely offline on a bundled 50-word English starter pack, in any of 3 selectable themes. **All gameplay logic is a pure, fully-tested engine** (89 tests green).
+The **offline core game is playable end-to-end** on-device: `Home → Setup → Game Intro → Gameplay → Round Result → Winner`, covering **Time Score**, **Max Score**, and **sudden-death tie-breaks**, with undo, foul/skip gating, and a drift-free absolute-timestamp timer that auto-ends the round. It runs entirely offline on a bundled 50-word English starter pack, in any of 3 selectable themes. **All gameplay logic is a pure, fully-tested engine** (104 tests green). The game now **survives an app kill and backgrounding**: the session persists on every change and rehydrates on launch (with a migration ladder), an interrupted round re-enters a **Paused** state, leaving the gameplay screen freezes + saves the round (resumable from Home), and Home offers **Resume / New game / Discard**.
 
-What's **not** there yet: kill/resume persistence, background-pause lifecycle, sound & haptics, and the breadth of the spec — the Setup, Settings, and Home screens currently expose only a slice, and the menu/library/rules/onboarding screens don't exist. The **backend and shared contracts are scaffolded but dark** (every endpoint returns `NOT_IMPLEMENTED`; no DB tables authored) — correct, since the backend must never gate gameplay and isn't needed until v2.
+What's **not** there yet: sound & haptics (the rest of Milestone A's "feel" pass — plumbing decided, assets later), and the breadth of the spec — the Setup, Settings, and Home screens currently expose only a slice, and the menu/library/rules/onboarding screens don't exist. The **backend and shared contracts are scaffolded but dark** (every endpoint returns `NOT_IMPLEMENTED`; no DB tables authored) — correct, since the backend must never gate gameplay and isn't needed until v2.
 
 | Area | State |
 | --- | --- |
@@ -26,9 +26,9 @@ What's **not** there yet: kill/resume persistence, background-pause lifecycle, s
 | Game engine (rules/scoring/word-draw/timer) | ✅ complete, pure, tested |
 | Themes | ✅ 3 (classic light+dark · arcade · vivid) |
 | Bundled starter pack | ✅ 50 words, English, `builtin` |
-| Tests (app) | ✅ 89 passing / 17 suites |
-| Lifecycle: persist + resume-after-kill | ⬜ next up |
-| Sound & haptics | ⬜ dependency not added |
+| Tests (app) | ✅ 104 passing / 20 suites |
+| Lifecycle: persist + resume-after-kill + background-pause | ✅ persistence, rehydrate, Paused overlay, resumable exit |
+| Sound & haptics | ⬜ dependency not added (next "feel" pass) |
 | v1 menu/support screens (Rules, Library, onboarding, full Setup/Settings) | ⬜ / 🟡 |
 | i18n + accessibility pass | ⬜ |
 | Airplane-mode E2E (release gate) | ⬜ no `.maestro/` yet |
@@ -94,14 +94,14 @@ Flat Expo Router stack; the whole turn flow is one status-driven route (no mid-r
 
 Build order stays **mobile-first**; the backend is a parallel, deferred track (§3). Each box is a concrete, code-level task grounded in the gaps above.
 
-### 2.1 Milestone A — Finish the MVP (v0): lifecycle & feel  ⟵ immediate next
-The spec's MVP explicitly requires kill/resume, background handling, basic haptics, and validation. The engine is ready; this is wiring + native feel.
+### 2.1 Milestone A — Finish the MVP (v0): lifecycle & feel  ⟵ in progress
+The spec's MVP explicitly requires kill/resume, background handling, basic haptics, and validation. The engine is ready; this is wiring + native feel. **The lifecycle backbone is done; the "feel" pass (sound/haptics, buzzer-rule UI, mis-tap debounce) is what remains.**
 
-- ⬜ **GameSession persistence** — persist on every meaningful change to AsyncStorage; carry `schemaVersion` + a migration ladder run on launch (resume-from-kill must survive schema changes). Hook point already noted in `useGameSession`.
-- ⬜ **Resume / Discard after kill** — rehydrate on launch; Home "Resume" already reads the session; add the Resume / New-game (Discard or forfeit) choice on relaunch.
-- ⬜ **Background lifecycle** (`AppState`, spec §8) — on background capture remaining time and **pause**; on foreground show a **Paused** overlay, never auto-resume; recompute `roundEndTimestamp` from remaining on tap.
-- ⬜ **Android hardware-back confirm** during an active round.
-- ⬜ **Sound + haptics** (spec §11) — add `expo-haptics` (+ audio); wire Correct/Skip/Foul/last-10s/times-up/win; respect OS silent + in-app toggles.
+- ✅ **GameSession persistence** — `persistence.ts` mirrors the live store to AsyncStorage on every meaningful change, stamped `GAME_SESSION_SCHEMA_VERSION` with an extensible, forward-progress-guarded migration ladder run on launch; `cardsById` is rebuilt from the persisted packs (deterministic ids), not serialized. Best-effort/offline-safe.
+- ✅ **Resume / Discard after kill** — launch rehydrate behind a hydrate gate in `_layout.tsx`; Home offers **Resume / New game / Discard** (confirmed). An interrupted round re-enters the **Paused** state (full-round fallback on a foreground crash, never a 0s forfeit).
+- ✅ **Background lifecycle** (`AppState`, spec §8) — `useGameLifecycle` pauses the round on leaving the foreground (captures remaining); foreground shows a **Paused** overlay and **never auto-resumes** — the tap re-anchors `roundEndTimestamp` via `resumeEndTimestamp`. The ticker is frozen while paused; leaving the gameplay screen (back/swipe/nav) also freezes it.
+- ✅ **Leave-during-round is non-destructive** — iOS swipe-back / Android back / any nav leaves cleanly (no native-stack desync); the `Gameplay` unmount-`pause()` freezes + persists the round so it's resumable from Home. *(A confirm dialog was intentionally dropped: native-stack can't confirm an interactive swipe via public APIs and leaving loses nothing — see [`bug.md`](bug.md) B2.)*
+- ⬜ **Sound + haptics** (spec §11) — add `expo-haptics` (+ audio); wire Correct/Skip/Foul/last-10s/times-up/win; respect OS silent + in-app toggles. *(Next pass: haptics + a SoundManager with drop-in registry; audio assets to follow.)*
 - ⬜ **Last-10s / 5s escalating audio-haptic warning** (TimerRing already has the < 10s visual state).
 - ⬜ **Mis-tap debounce** on action buttons (verify/extend `ActionButtonBar`).
 - ⬜ **Surface the buzzer rule** (`hardStop` vs `finishWord`) in the UI (engine already supports it).
