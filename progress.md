@@ -16,7 +16,7 @@ A living status tracker for the whole Alias workspace: **what is built, what is 
 
 ## Snapshot — 2026-06-08
 
-The **offline core game is playable end-to-end** on-device: `Home → Setup → Game Intro → Gameplay → Round Result → Winner`, covering **Time Score**, **Max Score**, and **sudden-death tie-breaks**, with undo, foul/skip gating, and a drift-free absolute-timestamp timer that auto-ends the round. It runs entirely offline on a bundled 50-word English starter pack, in any of 3 selectable themes. **All gameplay logic is a pure, fully-tested engine** (104 tests green). The game now **survives an app kill and backgrounding**: the session persists on every change and rehydrates on launch (with a migration ladder), an interrupted round re-enters a **Paused** state, leaving the gameplay screen freezes + saves the round (resumable from Home), and Home offers **Resume / New game / Discard**.
+The **offline core game is playable end-to-end** on-device: `Home → Setup → Game Intro → Gameplay → Round Result → Winner`, covering **Time Score**, **Max Score**, and **sudden-death tie-breaks**, with undo, foul/skip gating, and a drift-free absolute-timestamp timer that auto-ends the round. It runs entirely offline on a bundled 50-word English starter pack, in any of 3 selectable themes. **All gameplay logic is a pure, fully-tested engine** (117 tests green). The game now **survives an app kill and backgrounding**: the session persists on every change and rehydrates on launch (with a migration ladder), an interrupted round re-enters a **Paused** state, leaving the gameplay screen freezes + saves the round (resumable from Home), and Home offers **Resume / New game / Discard**.
 
 What's **not** there yet: sound & haptics (the rest of Milestone A's "feel" pass — plumbing decided, assets later), and the breadth of the spec — the Setup, Settings, and Home screens currently expose only a slice, and the menu/library/rules/onboarding screens don't exist. The **backend and shared contracts are scaffolded but dark** (every endpoint returns `NOT_IMPLEMENTED`; no DB tables authored) — correct, since the backend must never gate gameplay and isn't needed until v2.
 
@@ -26,7 +26,7 @@ What's **not** there yet: sound & haptics (the rest of Milestone A's "feel" pass
 | Game engine (rules/scoring/word-draw/timer) | ✅ complete, pure, tested |
 | Themes | ✅ 3 (classic light+dark · arcade · vivid) |
 | Bundled starter pack | ✅ 50 words, English, `builtin` |
-| Tests (app) | ✅ 104 passing / 20 suites |
+| Tests (app) | ✅ 117 passing / 23 suites |
 | Lifecycle: persist + resume-after-kill + background-pause | ✅ persistence, rehydrate, Paused overlay, resumable exit |
 | Sound & haptics | ⬜ dependency not added (next "feel" pass) |
 | v1 menu/support screens (Rules, Library, onboarding, full Setup/Settings) | ⬜ / 🟡 |
@@ -108,15 +108,17 @@ The spec's MVP explicitly requires kill/resume, background handling, basic hapti
 
 ### 2.2 Milestone B — Complete v1 (first shippable release)
 
-**Setup screen → full spec** (currently mode/timer/rounds/teams only):
-- ⬜ Scoring config — correct (1–10), skip (−5–0), foul (−5–0) scores; skip-limit toggle + stepper.
-- ⬜ Max-mode **Finish-the-rotation** fairness toggle.
-- ⬜ Team **color/avatar** picker; duplicate-name soft warning.
-- ⬜ **Describe-mode** selector (UI ready even if only `describe` is active pre-v2).
-- ⬜ **Word-pack multi-select** entry + combined-pool count (engine/pool already merge & dedupe).
-- ⬜ **Change-language** button + word-language modal (primary + optional secondary).
-- ⬜ Presets (Family / Party / Hardcore); per-team handicap/balancing.
-- ⬜ Persist Setup choices as next-game defaults.
+**Setup screen → full spec** (🟡 in progress — config-driven items done; pack/language items await their tracks):
+- ✅ Scoring config — correct (1–10), skip (−5–0), foul on/off + score (−5–0); skip-limit toggle + stepper. Plus the **buzzer rule** selector (closes the Milestone A "surface buzzer rule" item).
+- ✅ Max-mode **Finish-the-rotation** fairness toggle.
+- 🟡 Team **color** picker + duplicate-name soft warning. *(Avatar picker deferred.)*
+- ✅ **Describe-mode** selector (Describe / Taboo; other modes are v2).
+- ⬜ **Word-pack multi-select** entry + combined-pool count *(needs the Pack library below)*.
+- ⬜ **Change-language** button + word-language modal *(needs the `GET /v1/languages` seam + downloaded packs)*.
+- 🟡 Presets (Family / Party / Hardcore) ✅; per-team handicap/balancing ⬜.
+- ✅ Persist Setup choices as next-game defaults (`useSetupStore`, AsyncStorage, hydrated at launch).
+
+> Built on a pure `setupConfig.ts` (config↔engine mapping + presets) and reusable `Stepper`/`Toggle` primitives.
 
 **Menu & support screens:**
 - ⬜ **Home** — add Word Packs/Library, Rules, (Profile placeholder for v2) entries; optional streak/level meta.
