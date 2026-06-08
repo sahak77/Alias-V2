@@ -3,4 +3,5 @@
 export * from './types';
 export * from './pool';
 export * from './usePackStore';
+export * from './customPack';
 export { STARTER_EN } from './data/starter.en';

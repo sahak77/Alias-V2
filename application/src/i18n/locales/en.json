@@ -11,6 +11,7 @@
     "play": "Play",
     "discard": "Discard saved game",
     "howToPlay": "How to play",
+    "wordPacks": "Word packs",
     "settings": "Settings",
     "discardTitle": "Discard saved game?",
     "discardBody": "This ends your in-progress game and cannot be undone.",
@@ -117,5 +118,22 @@
     "share": "Share results",
     "shareWin": "{{name}} won our game of Alias! 🏆",
     "shareOver": "We just played Alias! 🎉"
+  },
+  "packs": {
+    "newTitle": "New word pack",
+    "editTitle": "Edit word pack",
+    "back": "Back",
+    "nameLabel": "Pack name",
+    "namePlaceholder": "e.g. Movie night",
+    "languageLabel": "Word language",
+    "wordsLabel": "Words",
+    "wordsHint": "One word per line — paste a list to add many at once.",
+    "wordsPlaceholder": "apple\nmountain\nguitar",
+    "wordCount_one": "{{count}} word",
+    "wordCount_other": "{{count}} words",
+    "save": "Save pack",
+    "delete": "Delete pack",
+    "deleteTitle": "Delete this pack?",
+    "deleteBody": "This removes the pack from your library and cannot be undone."
   }
 }
