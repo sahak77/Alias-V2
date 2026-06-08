@@ -20,3 +20,18 @@ export function getR2(): S3Client | null {
   });
   return client;
 }
+
+/**
+ * Read + parse a JSON object from the **public** R2/CDN base (`R2_PUBLIC_BASE_URL`).
+ * The OTA ContentPolicy is public + CDN-cached, so reads need no credentials — a
+ * plain fetch. Returns `null` when the base is unconfigured (offline-safe boot) or
+ * the object is absent (404); other HTTP errors throw so the caller can degrade.
+ */
+export async function getPublicJson(path: string): Promise<unknown | null> {
+  const base = process.env.R2_PUBLIC_BASE_URL;
+  if (!base) return null;
+  const res = await fetch(`${base.replace(/\/$/, '')}/${path.replace(/^\//, '')}`);
+  if (res.status === 404) return null;
+  if (!res.ok) throw new Error(`R2 public GET ${path} failed: ${res.status}`);
+  return (await res.json()) as unknown;
+}

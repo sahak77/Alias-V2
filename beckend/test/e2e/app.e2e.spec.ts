@@ -43,9 +43,17 @@ describe('App (e2e) — wiring smoke test', () => {
     expect(res.body).toMatchObject({ ok: false, error: { code: 'VALIDATION' } });
   });
 
-  it('GET /v1/content-policy/:locale is wired and returns the NOT_IMPLEMENTED envelope', async () => {
+  it('GET /v1/content-policy/:locale serves the empty (permissive) policy when R2 is unconfigured', async () => {
+    // No R2_PUBLIC_BASE_URL in the test env ⇒ the read path degrades softly to a
+    // permissive policy rather than failing — content delivery never gates.
     const res = await request(app.getHttpServer()).get('/v1/content-policy/en');
-    expect(res.status).toBe(501);
-    expect(res.body).toMatchObject({ ok: false, error: { code: 'NOT_IMPLEMENTED' } });
+    expect(res.status).toBe(200);
+    expect(res.body).toEqual({ locale: 'en', version: 0, blocklist: [] });
+  });
+
+  it('GET /v1/content-policy/:locale rejects a malformed locale with the VALIDATION envelope', async () => {
+    const res = await request(app.getHttpServer()).get('/v1/content-policy/x');
+    expect(res.status).toBe(422);
+    expect(res.body).toMatchObject({ ok: false, error: { code: 'VALIDATION' } });
   });
 });

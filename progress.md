@@ -80,7 +80,7 @@ Flat Expo Router stack; the whole turn flow is one status-driven route (no mid-r
 
 ### 1.7 Backend (`beckend/`) — scaffolded, dark — `v2`  *(full backend track + to-do: §3)*
 - ✅ NestJS 11 on Fastify, Node 24; boots with **zero outbound connections** (offline-first verified).
-- ✅ `POST /v1/generate` + `GET /v1/content-policy/:locale` wired → **stub bodies return `NOT_IMPLEMENTED`**; `GET /health` live.
+- ✅ `GET /v1/content-policy/:locale` **live** (R2/CDN OTA read path, soft-degrades to permissive — §3.3.1); `POST /v1/generate` wired → **stub returns `NOT_IMPLEMENTED`**; `GET /health` live.
 - ✅ Real error-envelope exception filter + global `ZodValidationPipe`; attestation/budget **guards** + content-gate **interceptor** are pass-through skeletons; infra clients (Redis/R2/LLM) are env-gated stubs; `infra/normalize.ts` is real (RN-safe). Seams `accounts`/`catalog`/`moderation` are empty placeholders.
 - 🟡 **DB schema authored** — the 8 v2 app-domain tables + 10 enums + indexes/FKs in `src/db/schema/`, first migration `0000_silly_spot.sql` (+ `pg_trgm`), and an idempotent `seed.ts` (content_policy + language catalog + official account + starter pack). `db:migrate`/`db:seed` run against the local Postgres (Docker). *(See §3.2 for the table tracker.)*
 - ✅ Test scaffolding present (`test/e2e`, `test/msw`, `test/redaction.fixture.test.ts`, `setup.ts`).
@@ -191,7 +191,7 @@ The spec's MVP explicitly requires kill/resume, background handling, basic hapti
 
 ### 3.1 Done ✅ — scaffold landed (dark)
 - ✅ NestJS 11 / Fastify / Node 24 boots offline with **zero outbound connections**; real error-envelope exception filter + global `ZodValidationPipe`; `GET /health`.
-- ✅ Stub endpoints `POST /v1/generate` + `GET /v1/content-policy/:locale` → `NOT_IMPLEMENTED`; attestation/budget **guards** + content-gate **interceptor** are pass-through skeletons; Redis/R2/LLM infra are env-gated stubs; `infra/normalize.ts` is real (RN-shared).
+- ✅ `GET /v1/content-policy/:locale` **live** (§3.3.1); `POST /v1/generate` stub → `NOT_IMPLEMENTED`; attestation/budget **guards** + content-gate **interceptor** are pass-through skeletons; Redis/LLM infra are env-gated stubs; `infra/r2.ts` now has the public-CDN JSON reader; `infra/normalize.ts` is real (RN-shared).
 - ✅ `@alias/contracts` (error envelope incl. `OFFLINE`, `Generation*`, `ContentPolicy`, `Pack`, `Locale` open BCP-47) consumed by app + server via `file:`.
 - ✅ Test scaffolding (e2e through the real pipeline, MSW, the **blocking** redaction fixture).
 
@@ -212,7 +212,7 @@ The full v2 model is **authored** in one pass (locked db-setup decision) so it's
 - ✅ **Seed** (`db:seed`, idempotent): launch-locale `content_policy` rows, the `language` catalog (en/es/fr/de/pt), the first-party `official` account, and the official **starter** `published_pack` (metadata; word blobs come with the R2 path). `account.auth_user_id` stays nullable + FK-less until Better Auth lands.
 
 ### 3.3 Feature build-order (endpoints/logic — tables from §3.2)
-1. ⬜ **`content_policy` read path** (R2 + OTA `latest.json`) — the one table firm-v2 reads. `v2`
+1. ✅ **`content_policy` read path** — `GET /v1/content-policy/:locale` resolves the OTA `policy/{locale}/latest.json` pointer → immutable `v{N}.json` from the **public R2/CDN base** (credential-free read; `infra/r2.ts` `getPublicJson`), re-validates against the shared `ContentPolicy` contract, short-TTL in-memory cache. Locale BCP-47 format-validated (path-safe → `VALIDATION` 422). **Degrades soft** to an empty (permissive) policy `{version:0, blocklist:[]}` when R2 is unconfigured / absent / errors — content delivery never gates. Unit + e2e tested (R2 mocked; no creds needed). `v2`
 2. ⬜ **AI generation proxy** `POST /v1/generate` — `Provider` (Haiku 4.5) + forced structured output + per-chunk Zod re-validate; **3-tier hard-reservation spend cap** (Upstash Lua, `count×1.5` capped); **attestation** (App Attest / Play Integrity, bounded soft-fail; hard-pass for `count>50`/`withTaboo`); **content gate** (normalizer + per-locale blocklist + output re-scan). → powers FE **AI Pack Generator** (§2.3). `v2` *headline*
 3. ⬜ **Observability + redaction** — pino/Sentry/Langfuse on OTLP; **blocking CI fixture** that `theme`/token/BYO-key never reach a span/log; Langfuse input-capture off; spend/rate OTel metrics + 70/90% alerts. `v2`
 4. ⬜ **`GET /v1/languages`** — dynamic word-language catalog (+ per-language `direction`, offline availability). → powers FE first-run + change-language pickers (§2.2). **`v1` onboarding** seam.
