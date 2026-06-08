@@ -1,4 +1,4 @@
-import { useCallback } from 'react';
+import { useCallback, useEffect } from 'react';
 import { View } from 'react-native';
 import { ActionButtonBar, Button, Screen, Text, TimerRing, WordCard } from '@/components/ui';
 import { useThemedStyles, type Theme } from '@/theme';
@@ -10,13 +10,26 @@ import { useRoundClock } from '../useRoundClock';
 export function Gameplay() {
   const session = useGameSession((s) => s.session);
   const cardsById = useGameSession((s) => s.cardsById);
+  const pausedRemainingMs = useGameSession((s) => s.pausedRemainingMs);
   const markWord = useGameSession((s) => s.markWord);
   const undo = useGameSession((s) => s.undo);
   const finishRound = useGameSession((s) => s.finishRound);
   const styles = useThemedStyles(makeStyles);
 
   const onExpire = useCallback(() => finishRound(), [finishRound]);
-  const remaining = useRoundClock(session?.roundEndTimestamp, onExpire);
+  // Freeze the clock while paused: an undefined end-timestamp stops the ticker
+  // and prevents a stray expiry firing in the background (spec §8).
+  const remaining = useRoundClock(
+    pausedRemainingMs !== null ? undefined : session?.roundEndTimestamp,
+    onExpire,
+  );
+
+  // Leaving the round (iOS swipe-back, Android back, or any navigation) tears
+  // down this screen — freeze the round on unmount so the absolute
+  // roundEndTimestamp can't keep elapsing off-screen, and persist it so it's
+  // resumable from Home. pause() is a no-op unless a round is actively running,
+  // so it's harmless on the normal round-ended unmount (spec §8).
+  useEffect(() => () => useGameSession.getState().pause(), []);
 
   if (!session || !session.currentRound) return null;
   const round = session.currentRound;

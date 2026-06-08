@@ -5,5 +5,8 @@ export * from './scoring';
 export * from './wordDraw';
 export * from './timer';
 export * from './engine';
+export * from './persistence';
 export * from './useGameSession';
+export * from './useGameLifecycle';
 export * from './useRoundClock';
+export { PausedOverlay } from './components/PausedOverlay';
