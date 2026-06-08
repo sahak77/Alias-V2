@@ -6,6 +6,8 @@ export * from './wordDraw';
 export * from './timer';
 export * from './engine';
 export * from './persistence';
+export * from './setupConfig';
+export * from './useSetupStore';
 export * from './useGameSession';
 export * from './useGameLifecycle';
 export * from './useRoundClock';
