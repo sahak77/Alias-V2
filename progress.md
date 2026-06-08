@@ -1,0 +1,203 @@
+# Alias — Progress & Roadmap to Completion
+
+A living status tracker for the whole Alias workspace: **what is built, what is in flight, and everything still to do until the product is complete** (v1 → v2 → v3).
+
+> **This is a status doc, not a design doc.** Decisions, rationale, and the authoritative spec live in the four canonical docs — this file only tracks *where we are against them* and must never become a fifth source of truth:
+> - [`application/alias-game-requirements-v2.md`](application/alias-game-requirements-v2.md) — product spec + data model
+> - [`alias-flow.md`](alias-flow.md) — every screen + its backend connection
+> - [`beckend/backend-architecture.md`](beckend/backend-architecture.md) — backend tools/decisions/seams
+> - [`beckend/db-architecture.md`](beckend/db-architecture.md) — DB schema/tables/enums
+>
+> When a decision changes, update the canonical docs first, then reconcile this tracker.
+
+**Legend** — Phase: `v0` MVP · `v1` first release · `v2` · `v3`. Status: ✅ done · 🟡 partial / in progress · ⬜ not started.
+
+---
+
+## Snapshot — 2026-06-06
+
+The **offline core game is playable end-to-end** on-device: `Home → Setup → Game Intro → Gameplay → Round Result → Winner`, covering **Time Score**, **Max Score**, and **sudden-death tie-breaks**, with undo, foul/skip gating, and a drift-free absolute-timestamp timer that auto-ends the round. It runs entirely offline on a bundled 50-word English starter pack, in any of 3 selectable themes. **All gameplay logic is a pure, fully-tested engine** (89 tests green).
+
+What's **not** there yet: kill/resume persistence, background-pause lifecycle, sound & haptics, and the breadth of the spec — the Setup, Settings, and Home screens currently expose only a slice, and the menu/library/rules/onboarding screens don't exist. The **backend and shared contracts are scaffolded but dark** (every endpoint returns `NOT_IMPLEMENTED`; no DB tables authored) — correct, since the backend must never gate gameplay and isn't needed until v2.
+
+| Area | State |
+| --- | --- |
+| Mobile core game loop | ✅ playable (Time + Max + sudden-death) |
+| Game engine (rules/scoring/word-draw/timer) | ✅ complete, pure, tested |
+| Themes | ✅ 3 (classic light+dark · arcade · vivid) |
+| Bundled starter pack | ✅ 50 words, English, `builtin` |
+| Tests (app) | ✅ 89 passing / 17 suites |
+| Lifecycle: persist + resume-after-kill | ⬜ next up |
+| Sound & haptics | ⬜ dependency not added |
+| v1 menu/support screens (Rules, Library, onboarding, full Setup/Settings) | ⬜ / 🟡 |
+| i18n + accessibility pass | ⬜ |
+| Airplane-mode E2E (release gate) | ⬜ no `.maestro/` yet |
+| Backend service | 🟡 scaffolded, all endpoints `NOT_IMPLEMENTED` |
+| Backend DB | 🟡 tooling only — **0 tables authored** |
+| `@alias/contracts` | ✅ scaffolded (errors, generation, content-policy, pack, locale) |
+
+---
+
+## 1. What's done ✅
+
+### 1.1 Mobile — game engine (`application/src/features/game/`) — `v0`
+The heart of the product, built first and kept pure (no React, no I/O) so it's exhaustively testable.
+
+- ✅ **Domain model** (`types.ts`) — `GameConfig`, `Team`, `InProgressRound` (mark-based, undo-ready), `RoundResult`, `SuddenDeathState`, `GameSession` (stamped `GAME_SESSION_SCHEMA_VERSION = 1`).
+- ✅ **Scoring** (`scoring.ts`) — correct/skip/foul deltas; **negative totals allowed**; live score always derived from per-word `marks` (never a running counter), so undo and contest-a-call stay consistent.
+- ✅ **Word draw** (`wordDraw.ts`) — shuffled pool, **never-repeat-while-unused**, reshuffle-on-exhaust excluding the on-screen word.
+- ✅ **Timer** (`timer.ts`) — absolute `roundEndTimestamp` math; `hardStop` / `finishWord` buzzer rules.
+- ✅ **Engine reducer + selectors** (`engine.ts`) — `createSession`/`startRound`/`mark`/`undoLast`/`endRound`/`continueAfterResult`/`restart`; both **Time + Max** end-of-game, **sudden-death** rotation, `activeTeam`/`liveTeamScore`/`rankedTeams`/`winner`/`canSkip`/`canFoul`, `validateSetup`, `defaultGameConfig`.
+- ✅ **React glue** — `useGameSession` (Zustand store dispatching engine transitions with the wall clock) and `useRoundClock` (absolute-timestamp ticker that auto-ends the round at 0).
+
+### 1.2 Mobile — packs (`application/src/features/packs/`) — `v0`
+- ✅ **Bundled starter pack** `STARTER_EN` — 50 words, English, slim `{w,d,t?}` wire shape, `source: 'builtin'`, validated against the contract `Pack`.
+- ✅ **Word-pool adapter** (`pool.ts`) — maps wire `Card[]` → engine pool, assigns local card ids, merges/dedupes across packs (combined-pool ready), exposes `cardsById`.
+
+### 1.3 Mobile — theme system (`application/src/theme/`) — `v1`
+- ✅ **3 selectable themes** matching the design mockups: **classic** (light + dark), **arcade** (dark), **vivid** (dark).
+- ✅ Superset `ThemeColors` contract + optional `Decoration` groups (gradients, team colors, 3D button styles); `registry.resolveTheme(key, appearance, osScheme)`.
+- ✅ Zustand theme store **persisted to AsyncStorage**; `ThemeProvider` + `useTheme()` + `useThemedStyles()`.
+
+### 1.4 Mobile — UI primitives (`application/src/components/ui/`) — `v1`
+- ✅ Foundational: `Text`, `Button` (flat + gradient + 3D), `Card`, `Screen` (themed/gradient background).
+- ✅ Game primitives: `WordCard` (taboo + golden variants), `TimerRing` (SVG arc, danger state < 10s), `ActionButtonBar` (Correct/Skip/Foul — icon **+** color, theme-aware), `SegmentedControl`, `Chip`.
+- ✅ All primitives unit-tested.
+
+### 1.5 Mobile — screens & routing (`application/app/`) — `v0`/`v1`
+Flat Expo Router stack; the whole turn flow is one status-driven route (no mid-round navigation churn).
+- ✅ **Home** (`index.tsx`) — Play, conditional **Resume** (in-memory), Settings.
+- ✅ **Setup** (`setup.tsx`) — teams (add/remove/rename, auto colors), **mode toggle**, round-timer stepper, rounds-per-team / target-score stepper, pool count, validation, Start. *(MVP slice — see §2.2 for the full-spec gaps.)*
+- ✅ **Game** (`game.tsx`) — status router → the four feature screens:
+  - **Game Intro** — pass-the-phone, team + score, round/score/sudden-death info, Start Round.
+  - **Gameplay** — team + live score, `TimerRing`, `WordCard` (taboo in taboo mode), **Undo last**, `ActionButtonBar` with skip/foul gating, auto-end on expiry.
+  - **Round Result** — correct/skip/foul tiles, signed delta, new total, Continue.
+  - **Winner** — 🎉 banner, ranked scoreboard, New Game / Restart (sudden-death handled by the engine).
+- ✅ **Settings** (`settings.tsx`) — live theme + appearance picker (all 3 themes). *(Theme only — full Settings is §2.2.)*
+
+### 1.6 Mobile — dormant v2 seams
+- ✅ `lib/apiClient.ts`, `config.ts`, `queryClient.ts`, `storage.ts` retained as the network seam (unused by gameplay; the removed sample `auth` feature + `session` store were intentionally deleted).
+
+### 1.7 Backend (`beckend/`) — scaffolded, dark — `v2`
+- ✅ NestJS 11 on Fastify, Node 24; boots with **zero outbound connections** (offline-first verified).
+- ✅ `POST /v1/generate` + `GET /v1/content-policy/:locale` wired → **stub bodies return `NOT_IMPLEMENTED`**; `GET /health` live.
+- ✅ Real error-envelope exception filter + global `ZodValidationPipe`; attestation/budget **guards** + content-gate **interceptor** are pass-through skeletons; infra clients (Redis/R2/LLM) are env-gated stubs; `infra/normalize.ts` is real (RN-safe). Seams `accounts`/`catalog`/`moderation` are empty placeholders.
+- 🟡 **DB = tooling only** — Drizzle + drizzle-kit + lazy `pg` client + docker-compose Postgres + empty schema barrel + seed stub. **No tables authored** (`db:generate` reports 0 tables).
+- ✅ Test scaffolding present (`test/e2e`, `test/msw`, `test/redaction.fixture.test.ts`, `setup.ts`).
+
+### 1.8 Shared contracts (`packages/contracts/`) — `v2`
+- ✅ tsup-built `@alias/contracts` (peer-dep Zod) consumed by app + backend via `file:`. Schemas: error envelope, `GenerationRequest`/`WordCard`/`AiMeta`/`GenerationResponse`, `ContentPolicy`, `Pack`, `Locale` (open BCP-47 + `LAUNCH_LOCALES`).
+
+---
+
+## 2. What's next — milestones to completion
+
+Build order stays **mobile-first**; the backend is a parallel, deferred track (§3). Each box is a concrete, code-level task grounded in the gaps above.
+
+### 2.1 Milestone A — Finish the MVP (v0): lifecycle & feel  ⟵ immediate next
+The spec's MVP explicitly requires kill/resume, background handling, basic haptics, and validation. The engine is ready; this is wiring + native feel.
+
+- ⬜ **GameSession persistence** — persist on every meaningful change to AsyncStorage; carry `schemaVersion` + a migration ladder run on launch (resume-from-kill must survive schema changes). Hook point already noted in `useGameSession`.
+- ⬜ **Resume / Discard after kill** — rehydrate on launch; Home "Resume" already reads the session; add the Resume / New-game (Discard or forfeit) choice on relaunch.
+- ⬜ **Background lifecycle** (`AppState`, spec §8) — on background capture remaining time and **pause**; on foreground show a **Paused** overlay, never auto-resume; recompute `roundEndTimestamp` from remaining on tap.
+- ⬜ **Android hardware-back confirm** during an active round.
+- ⬜ **Sound + haptics** (spec §11) — add `expo-haptics` (+ audio); wire Correct/Skip/Foul/last-10s/times-up/win; respect OS silent + in-app toggles.
+- ⬜ **Last-10s / 5s escalating audio-haptic warning** (TimerRing already has the < 10s visual state).
+- ⬜ **Mis-tap debounce** on action buttons (verify/extend `ActionButtonBar`).
+- ⬜ **Surface the buzzer rule** (`hardStop` vs `finishWord`) in the UI (engine already supports it).
+
+### 2.2 Milestone B — Complete v1 (first shippable release)
+
+**Setup screen → full spec** (currently mode/timer/rounds/teams only):
+- ⬜ Scoring config — correct (1–10), skip (−5–0), foul (−5–0) scores; skip-limit toggle + stepper.
+- ⬜ Max-mode **Finish-the-rotation** fairness toggle.
+- ⬜ Team **color/avatar** picker; duplicate-name soft warning.
+- ⬜ **Describe-mode** selector (UI ready even if only `describe` is active pre-v2).
+- ⬜ **Word-pack multi-select** entry + combined-pool count (engine/pool already merge & dedupe).
+- ⬜ **Change-language** button + word-language modal (primary + optional secondary).
+- ⬜ Presets (Family / Party / Hardcore); per-team handicap/balancing.
+- ⬜ Persist Setup choices as next-game defaults.
+
+**Menu & support screens:**
+- ⬜ **Home** — add Word Packs/Library, Rules, (Profile placeholder for v2) entries; optional streak/level meta.
+- ⬜ **Rules / How to play** screen.
+- ⬜ **Settings → full spec** — sound/haptics toggles, high-contrast & large-text, left/right-handed layout, default duration & scoring, App (UI) language, **Word-languages** download/remove section.
+- ⬜ **Round Result** — optional word-recap list (Correct/Skipped/Foul per word).
+- ⬜ **Winner** — animated confetti, total-rounds-played, **Share results** card via OS share sheet.
+
+**Packs, content & data:**
+- ⬜ Local **Pack store + My-Packs library** (browse/select; the `Pack` contract exists).
+- ⬜ Migration-ladder runner across local stores (game session already stamps v1; theme store persisted).
+- ⬜ More/larger starter content as needed.
+
+**i18n / accessibility (foundations):**
+- ⬜ Externalize all strings (i18next + ICU plurals), **English end-to-end**; RTL-safe layout groundwork (`start`/`end`, `writingDirection`).
+- ⬜ **First-launch language onboarding** (app language → word language → starter packs) — degrades to the bundled starter offline; depends on the `GET /v1/languages` seam + R2 downloads (§3).
+- ⬜ Accessibility pass — roles/labels everywhere, ≥44pt targets, dynamic type, WCAG AA contrast, color **+** icon.
+
+**Light engine extras (cheap, high-impact):**
+- ⬜ Streaks / combo multiplier + **Golden Word**.
+
+**Release gate:**
+- ⬜ **Maestro airplane-mode E2E** (`.maestro/`) — a full game on a fresh install with no network. This is the offline-first **release gate**.
+
+### 2.3 Milestone C — v2 features (mobile) + backend lights up
+
+**Mobile gameplay:**
+- ⬜ **Describe modes** — Taboo (card data ready), One-word, Charades, Hum.
+- ⬜ **Tilt-to-Play** (`expo-sensors`) — headline.
+- ⬜ **Buzz-in steals**, **power-ups / wildcards**, **wager / bluff round**.
+- ⬜ **Stats & Achievements** (device-local), **Game History**.
+- ⬜ **Challenge-a-call** on the round recap (recomputes from per-word records).
+- ⬜ Remaining UI locales (es/fr/de/pt) + lazy font pipeline.
+
+**Mobile content & platform (the heavy part of v2):**
+- ⬜ **Pack Editor** (create/edit, taboo lists, bulk paste, dedupe; imported packs fork on edit).
+- ⬜ **AI Pack Generator** — `POST /v1/generate` (chunked, AbortController), **auto-Taboo**, editable draft, saved as offline `source:'ai'` pack — headline.
+- ⬜ **Bilingual "Translate-a-pack"** mode (consumes `translations`) — signature feature.
+- ⬜ **Offline QR / `.aliaspack` sharing** + Import Preview (dedupe by `contentHash`).
+- ⬜ **Public library + publishing** — account (nickname/email/password) + Profile, Discover, install/rating/report, moderation/IP-watchlist. *(Heaviest v2 item; splittable to v3 — local + offline sharing already deliver the "play with friends" value.)*
+- ⬜ Content-filter selector + enforcement *(deferred per spec §15.14; `standard | adult`, no `kids`)*.
+
+**Backend (parallel track §3 lights up to support the above.)**
+
+### 2.4 Milestone D — v3
+- ⬜ **Local multiplayer** (Wi-Fi/Bluetooth) + cast-to-TV (NestJS WS gateway, same process).
+- ⬜ **Auto-foul** on-device speech recognition (consumes `translations`).
+- ⬜ Optional online play; region-variant packs (es-MX/pt-PT); **RTL (ar/he) + CJK** languages.
+- ⬜ Creator profiles / remix lineage; on-device AI generation; server-side streaming generation.
+
+---
+
+## 3. Backend track (parallel, deferred — `v2`)
+
+The backend stays dark until AI generation / publishing is greenlit. Build order from [`backend-architecture.md` §4](beckend/backend-architecture.md) and [`db-architecture.md` §10](beckend/db-architecture.md):
+
+1. ⬜ **Author the full v2 DB schema + first migration + seed** (the immediate backend next-pass): `account`, `published_pack`, `rating`, `install`, `report`, `moderation_verdict`, `content_policy`, `language` + enums + `pg_trgm` + per-locale `tsvector`. (Tables exist for review; most mutating endpoints stay deferred.)
+2. ⬜ **`content_policy` real read path** (R2 + OTA `latest.json`) — the one table firm-v2 code reads.
+3. ⬜ **AI generation proxy** — real `Provider` (Haiku 4.5), forced structured output + per-chunk Zod re-validate, **3-tier hard-reservation spend cap** (Upstash Lua), **attestation** (App Attest / Play Integrity, bounded soft-fail), **content gate** (normalizer + per-locale blocklist + output re-scan).
+4. ⬜ **Observability + redaction** — pino/Sentry/Langfuse on OTLP; **blocking CI fixture** that `theme`/token/BYO-key never reach any exported span/log; Langfuse input-capture off.
+5. ⬜ **`GET /v1/languages`** seam — the dynamic word-language catalog (powers first-run + change-language pickers; client never hardcodes word languages).
+6. ⬜ **Catalog: publish / Discover / install / rating** endpoints + one `search` repo + pg-boss (when catalog greenlit).
+7. ⬜ **Auth** (Better Auth, self-hosted; resolve the `account` table-name collision + token mechanism first) — when publishing greenlit.
+8. ⬜ **Moderation** — `moderatePack()` (fail-closed), append-only takedown evidence, staffed queue + admin panel, IP watchlist.
+
+---
+
+## 4. Cross-cutting release gates & invariants (check every milestone)
+
+- 🔒 **Offline-first is a release gate.** No network call may gate gameplay, pack selection, or a word draw. The backend may only ever *write* packs into local storage. Verified by the airplane-mode E2E (Milestone B).
+- 🔒 **One contract source.** Wire shapes live once in `packages/contracts/` (Zod); app infers types, server re-validates. Never fork a wire shape or derive it from DB tables.
+- 🔒 **Privacy.** No accounts/PII for the core game or any local/AI feature; the only PII surface is the optional publishing account (v2). Game data/stats/history stay on-device.
+- 🔒 **Schema versioning.** Persisted client stores and server records carry `schemaVersion` with a migration ladder.
+- 🔒 **Per-project gates.** Run `lint` + `typecheck` + `test` in `application/` and/or `beckend/` before every push.
+- 🔒 **Docs in sync.** A decision change updates all four canonical docs in the same pass, then this tracker.
+- ♿ **Accessibility & i18n** are built in from v1, not retrofitted (roles/labels, 44pt targets, RTL-safe layout, color **+** icon).
+
+---
+
+## 5. Definition of done
+
+- **v1 ships when:** the full core-game experience (all Setup/Settings options, Rules, Library, first-launch onboarding) plays offline end-to-end in English across the 3 themes, with persistence/resume, sound & haptics, an accessibility pass, and a **green airplane-mode Maestro E2E**.
+- **v2 ships when:** describe modes, AI generation (auto-Taboo), bilingual mode, the Pack Editor, offline sharing, and Stats land on-device — and (if greenlit) the backend serves AI generation + the public catalog with moderation, all degrading softly offline.
+- **v3 ships when:** local multiplayer, auto-foul, additional (incl. RTL/CJK) languages, and online play are in.
