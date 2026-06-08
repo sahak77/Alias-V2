@@ -10,10 +10,24 @@
     "newGame": "New game",
     "play": "Play",
     "discard": "Discard saved game",
+    "howToPlay": "How to play",
     "settings": "Settings",
     "discardTitle": "Discard saved game?",
     "discardBody": "This ends your in-progress game and cannot be undone.",
     "discardConfirm": "Discard"
+  },
+  "rules": {
+    "title": "How to play",
+    "goalHeading": "The goal",
+    "goalBody": "Get your team to guess as many words as possible before time runs out — by describing each word without saying it or any part of it.",
+    "turnsHeading": "Taking turns",
+    "turnsBody": "Split into teams. On your turn one player describes and the rest guess; pass the phone to the next team when the round ends.",
+    "actionsHeading": "Correct, Skip & Foul",
+    "actionsBody": "Tap Correct when your team gets it, Skip to pass on a tough word, and Foul if the describer says the word itself — fouls can cost points.",
+    "timerHeading": "Beat the clock",
+    "timerBody": "Every round is timed. When it ends the round stops — or the describer gets one last word, depending on your buzzer setting.",
+    "winHeading": "Winning",
+    "winBody": "In Time Score the highest total after every team plays its rounds wins. In Max Score the first team to the target score wins. Ties go to a sudden-death round."
   },
   "setup": {
     "title": "New game",

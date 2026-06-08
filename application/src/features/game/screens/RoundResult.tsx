@@ -9,6 +9,7 @@ import { useGameSession } from '../useGameSession';
 export function RoundResult() {
   const { t } = useTranslation();
   const session = useGameSession((s) => s.session);
+  const cardsById = useGameSession((s) => s.cardsById);
   const next = useGameSession((s) => s.next);
   const styles = useThemedStyles(makeStyles);
 
@@ -18,6 +19,8 @@ export function RoundResult() {
   if (!last || !team) return null;
 
   const delta = last.scoreDelta;
+  const wordsFor = (ids: readonly string[]): string[] =>
+    ids.map((id) => cardsById.get(id)?.word).filter((w): w is string => w !== undefined);
 
   return (
     <Screen scroll>
@@ -43,8 +46,26 @@ export function RoundResult() {
         </Text>
       </Card>
 
+      <WordRecap label={t('result.correct')} tone="correct" words={wordsFor(last.correctWordIds)} />
+      <WordRecap label={t('result.skipped')} tone="skip" words={wordsFor(last.skippedWordIds)} />
+      <WordRecap label={t('result.fouls')} tone="foul" words={wordsFor(last.fouledWordIds)} />
+
       <Button title={t('result.continue')} size="xl" onPress={next} style={styles.continue} />
     </Screen>
+  );
+}
+
+/** One outcome group's words; hidden when the group is empty (spec §6.4). */
+function WordRecap({ label, tone, words }: { label: string; tone: ChipTone; words: string[] }) {
+  const styles = useThemedStyles(makeStyles);
+  if (words.length === 0) return null;
+  return (
+    <Card style={styles.recap}>
+      <Chip label={label} tone={tone} />
+      <Text variant="body" color="textMuted">
+        {words.join(', ')}
+      </Text>
+    </Card>
   );
 }
 
@@ -63,5 +84,6 @@ const makeStyles = (theme: Theme) => ({
   tiles: { flexDirection: 'row' as const, gap: theme.spacing.sm },
   tile: { flex: 1, alignItems: 'center' as const, gap: theme.spacing.sm },
   deltaCard: { alignItems: 'center' as const, gap: theme.spacing.xs },
+  recap: { gap: theme.spacing.sm },
   continue: { alignSelf: 'stretch' as const },
 });
