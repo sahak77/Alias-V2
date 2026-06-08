@@ -69,4 +69,18 @@ describe('App (e2e) — wiring smoke test', () => {
     expect(res.status).toBe(200);
     expect(res.body).toEqual({ languages: [] });
   });
+
+  it('GET /v1/packs is wired and degrades to an empty catalog when the DB is unreachable', async () => {
+    // No Postgres in the test env ⇒ the read fails and the endpoint degrades softly
+    // (the client falls back to the bundled starter pack) rather than erroring.
+    const res = await request(app.getHttpServer()).get('/v1/packs');
+    expect(res.status).toBe(200);
+    expect(res.body).toEqual({ packs: [] });
+  });
+
+  it('GET /v1/packs rejects a malformed locale query with the VALIDATION envelope', async () => {
+    const res = await request(app.getHttpServer()).get('/v1/packs?locale=x');
+    expect(res.status).toBe(422);
+    expect(res.body).toMatchObject({ ok: false, error: { code: 'VALIDATION' } });
+  });
 });

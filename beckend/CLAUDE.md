@@ -16,9 +16,9 @@ Practical consequences:
 
 ## What this service is (and is not)
 
-**Is:** the headline **AI word-pack generation proxy** — an anti-abuse-gated, budget-capped, structured-output endpoint that returns validated `WordCard[]` chunks. Plus OTA `ContentPolicy` delivery and the content gate.
+**Is:** the headline **AI word-pack generation proxy** — an anti-abuse-gated, budget-capped, structured-output endpoint that returns validated `WordCard[]` chunks. Plus OTA `ContentPolicy` delivery + the content gate, the dynamic word-language catalog (`GET /v1/languages`), and the **official-pack catalog READ** (`GET /v1/packs`) — first-party official packs for onboarding (a `v1` exception, see below).
 
-**Is not (yet):** publishing, the public catalog/Discover, accounts/auth, and the moderation queue. **Their database tables exist now** (see [Database](#database)), but their **endpoints and feature logic are deferred seams** — do not build them until publishing is greenlit. Folders under `src/features/{accounts,catalog,moderation}` are intentionally empty placeholders.
+**Is not (yet):** the community **catalog write side** (publish / Discover / search / ratings / install tracking), accounts/auth, and the moderation queue. **Their database tables exist now** (see [Database](#database)), but their **endpoints and feature logic are deferred seams** — do not build them until publishing is greenlit. `src/features/{accounts,moderation}` are empty placeholders; `src/features/catalog/` is reserved for the deferred **community** Discover/publish (the `v1` official-pack *read* lives separately in `src/features/packs/`). *Exception:* serving first-party **official** packs read-only (`published_pack` + R2) is a `v1` onboarding concern and IS built — see `backend-architecture.md` §4.
 
 ---
 
@@ -87,7 +87,9 @@ See the annotated tree in [`backend-architecture.md` §5](backend-architecture.m
 - `src/main.ts` — bootstrap. **Import the OTel SDK first**, then Fastify adapter, global `ZodValidationPipe`, the error-envelope exception filter, and Swagger.
 - `src/features/generation/` — the proxy: `controller` → guards → interceptors → `service` → `LlmClient` → provider; owns `content-gate` + `prompt`. **Built (env-gated).**
 - `src/features/content-policy/` — OTA `ContentPolicy` read path from R2. **Built.**
-- `src/features/{accounts,catalog,moderation}/` — **seams. Do not build.**
+- `src/features/languages/` — dynamic word-language catalog (`GET /v1/languages`, reads the `language` table). **Built.**
+- `src/features/packs/` — official-pack catalog READ (`GET /v1/packs`, reads `published_pack`; client downloads blobs direct from R2/CDN). **Built (`v1` onboarding).**
+- `src/features/{accounts,catalog,moderation}/` — **seams. Do not build.** (`catalog/` = the deferred *community* Discover/publish/ratings — distinct from the built `packs/` read.)
 - `src/common/` — `guards/` (attestation, budget — also hold their verifier/reservation ports + DI tokens), `interceptors/` (budget refund-on-error + content-gate), `filters/` (error envelope), pipes.
 - `src/infra/` — `redis`, `r2`, `otel`, `logger`, `llm-client` (the one instrumented LLM wrapper — Langfuse spans live here), `llm-provider` (Anthropic adapter + `Provider` port), `attestation` + `budget-reservation` (env-gated adapters for the guard ports, bound in `InfraModule`), `normalize` (RN-safe, shared with the app), `queue` (seam).
 - `src/db/` — Drizzle `schema/`, `migrations/`, `seed.ts`, `client.ts`. **Provisioned now.**
@@ -147,7 +149,7 @@ See the annotated tree in [`backend-architecture.md` §5](backend-architecture.m
 ## Do NOT
 
 - Put the backend on the critical path of gameplay, pack selection, or a word draw.
-- Build the deferred seams (accounts/catalog/moderation endpoints) before publishing is greenlit.
+- Build the deferred seams (accounts, the **community** catalog write — publish/Discover/search/ratings/install — and moderation endpoints) before publishing is greenlit. *(The `v1` official-pack read in `src/features/packs/` is the only greenlit catalog slice.)*
 - Add class-validator DTOs or derive wire contracts from Drizzle tables.
 - Concatenate the untrusted `theme` into prompt instructions, or trust client-validated input without re-validating.
 - Let `theme`/tokens/BYO-keys reach logs, spans, or Langfuse inputs.

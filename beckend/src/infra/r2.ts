@@ -35,3 +35,14 @@ export async function getPublicJson(path: string): Promise<unknown | null> {
   if (!res.ok) throw new Error(`R2 public GET ${path} failed: ${res.status}`);
   return (await res.json()) as unknown;
 }
+
+/**
+ * Public CDN URL for an R2 object key (e.g. a content-addressed pack blob
+ * `packs/{contentHash}.json.gz`), or `null` when object storage is unconfigured.
+ * Clients fetch pack blobs from this URL DIRECTLY — the backend stays off the data path.
+ */
+export function r2PublicUrl(key: string): string | null {
+  const base = process.env.R2_PUBLIC_BASE_URL;
+  if (!base) return null;
+  return `${base.replace(/\/$/, '')}/${key.replace(/^\//, '')}`;
+}

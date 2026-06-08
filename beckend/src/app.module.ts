@@ -11,6 +11,7 @@ import { DbModule } from './db/db.module';
 import { GenerationModule } from './features/generation/generation.module';
 import { ContentPolicyModule } from './features/content-policy/content-policy.module';
 import { LanguagesModule } from './features/languages/languages.module';
+import { PacksModule } from './features/packs/packs.module';
 import { ErrorEnvelopeFilter } from './common/filters/error-envelope.filter';
 
 @Module({
@@ -22,7 +23,8 @@ import { ErrorEnvelopeFilter } from './common/filters/error-envelope.filter';
     GenerationModule,
     ContentPolicyModule,
     LanguagesModule,
-    // Seams — accounts / catalog / moderation — are intentionally NOT imported.
+    PacksModule,
+    // Seams — accounts / catalog (community Discover/publish) / moderation — NOT imported.
   ],
   controllers: [AppController],
   providers: [
