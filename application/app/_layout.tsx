@@ -7,6 +7,7 @@ import { View } from 'react-native';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { useGameLifecycle, useGameSession, useSetupStore } from '@/features/game';
+import { usePackStore } from '@/features/packs';
 import { usePrefsStore } from '@/features/settings';
 import { queryClient } from '@/lib/queryClient';
 import { ThemeProvider, useTheme } from '@/theme';
@@ -27,15 +28,17 @@ function GameGate({ children }: { children: ReactNode }) {
   const hydrate = useGameSession((s) => s.hydrate);
   const hydrateSetup = useSetupStore((s) => s.hydrate);
   const hydratePrefs = usePrefsStore((s) => s.hydrate);
+  const hydratePacks = usePackStore((s) => s.hydrate);
   useGameLifecycle();
 
   useEffect(() => {
     void hydrate();
-    // Setup defaults + prefs aren't render gates (neither is the first route);
-    // load them in the background so they're ready by the time they're needed.
+    // Setup defaults + prefs + the pack library aren't render gates (neither is the
+    // first route); load them in the background so they're ready when needed.
     void hydrateSetup();
     void hydratePrefs();
-  }, [hydrate, hydrateSetup, hydratePrefs]);
+    void hydratePacks();
+  }, [hydrate, hydrateSetup, hydratePrefs, hydratePacks]);
 
   if (!isHydrated) {
     return <View style={{ flex: 1, backgroundColor: theme.colors.background }} />;
