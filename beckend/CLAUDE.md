@@ -85,11 +85,11 @@ RUN_LIVE_LLM=1 npm run test:llm   # nightly only, under a tiny spend cap
 See the annotated tree in [`backend-architecture.md` §5](backend-architecture.md). Summary:
 
 - `src/main.ts` — bootstrap. **Import the OTel SDK first**, then Fastify adapter, global `ZodValidationPipe`, the error-envelope exception filter, and Swagger.
-- `src/features/generation/` — the proxy: `controller` → `service` → `provider`/`content-gate`/`prompt`. **The only fully-built feature.**
-- `src/features/content-policy/` — OTA `ContentPolicy` read path from R2.
+- `src/features/generation/` — the proxy: `controller` → guards → interceptors → `service` → `LlmClient` → provider; owns `content-gate` + `prompt`. **Built (env-gated).**
+- `src/features/content-policy/` — OTA `ContentPolicy` read path from R2. **Built.**
 - `src/features/{accounts,catalog,moderation}/` — **seams. Do not build.**
-- `src/common/` — `guards/` (attestation, budget), `interceptors/` (content-gate), `filters/` (error envelope), pipes.
-- `src/infra/` — `redis`, `r2`, `otel`, `logger`, `llm-client` (the one instrumented LLM wrapper — Langfuse spans live here), `normalize` (RN-safe, shared with the app), `queue` (seam).
+- `src/common/` — `guards/` (attestation, budget — also hold their verifier/reservation ports + DI tokens), `interceptors/` (budget refund-on-error + content-gate), `filters/` (error envelope), pipes.
+- `src/infra/` — `redis`, `r2`, `otel`, `logger`, `llm-client` (the one instrumented LLM wrapper — Langfuse spans live here), `llm-provider` (Anthropic adapter + `Provider` port), `attestation` + `budget-reservation` (env-gated adapters for the guard ports, bound in `InfraModule`), `normalize` (RN-safe, shared with the app), `queue` (seam).
 - `src/db/` — Drizzle `schema/`, `migrations/`, `seed.ts`, `client.ts`. **Provisioned now.**
 
 **Rule:** cross-cutting concerns are NestJS primitives — attestation/budget are **guards**, the content gate is an **interceptor**, the error envelope is an **exception filter**. Keep controllers thin; logic lives in services.

@@ -26,7 +26,16 @@ export const envSchema = z.object({
   // LLM provider (optional until the generation proxy lands).
   ANTHROPIC_API_KEY: z.string().optional(),
   LLM_MODEL: z.string().default('claude-haiku-4-5'),
-  LLM_MONTHLY_BUDGET: z.coerce.number().nonnegative().default(50),
+  LLM_MONTHLY_BUDGET: z.coerce.number().nonnegative().default(50), // USD; drives OTel spend alerts
+
+  // Spend-cap reservation tiers (in tokens). Admission control reserves projected-max
+  // tokens BEFORE each provider call and refunds the delta after. Operator-tuned;
+  // defaults are conservative. Enforced only when Upstash Redis is configured.
+  LLM_MONTHLY_TOKEN_BUDGET: z.coerce.number().int().nonnegative().default(50_000_000),
+  LLM_DAILY_TOKEN_BUDGET_PER_IP: z.coerce.number().int().nonnegative().default(200_000),
+  LLM_DAILY_TOKEN_BUDGET_PER_TOKEN: z.coerce.number().int().nonnegative().default(100_000),
+  // Hard ceiling as a fraction of the monthly token budget (OTel alerts fire at 70/90%).
+  LLM_BUDGET_HARD_CEILING: z.coerce.number().min(0).max(1).default(0.9),
 
   // Observability (optional; backstage-only — never user-facing).
   OTEL_EXPORTER_OTLP_ENDPOINT: z.url().optional(),

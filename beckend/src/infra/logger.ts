@@ -13,7 +13,10 @@ export const loggerOptions: Params = {
     level: process.env.LOG_LEVEL ?? (isDev ? 'debug' : 'info'),
     transport: isDev ? { target: 'pino-pretty', options: { singleLine: true } } : undefined,
     redact: {
-      paths: ['req.headers.authorization', 'req.headers.cookie'],
+      // `x-attestation` carries the anti-abuse device token; bracket-quote it because
+      // the header name has a hyphen. `theme` lives in the request body, which
+      // autoLogging does not serialize — but never add a body serializer that would.
+      paths: ['req.headers.authorization', 'req.headers.cookie', 'req.headers["x-attestation"]'],
       remove: true,
     },
     autoLogging: true,

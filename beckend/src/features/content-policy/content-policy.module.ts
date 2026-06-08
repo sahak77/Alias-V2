@@ -3,11 +3,12 @@ import { ContentPolicyController } from './content-policy.controller';
 import { ContentPolicyService } from './content-policy.service';
 
 /**
- * OTA ContentPolicy read path (R2 + CDN). Wired with a stub body returning the
- * NOT_IMPLEMENTED envelope until the R2 read/cache/validate logic lands.
+ * OTA ContentPolicy read path (R2 + CDN). The service is exported so the generation
+ * content gate can read the per-locale blocklist it enforces.
  */
 @Module({
   controllers: [ContentPolicyController],
   providers: [ContentPolicyService],
+  exports: [ContentPolicyService],
 })
 export class ContentPolicyModule {}

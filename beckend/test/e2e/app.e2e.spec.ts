@@ -27,12 +27,17 @@ describe('App (e2e) — wiring smoke test', () => {
     expect(res.body).toEqual({ status: 'ok' });
   });
 
-  it('POST /v1/generate maps the stub to the NOT_IMPLEMENTED envelope', async () => {
+  it('POST /v1/generate returns a validated, deduped, capped WordCard[] chunk', async () => {
+    // MSW returns 30 cards (incl. a duplicate + an invalid one); the pipeline
+    // Zod-re-validates, dedupes, and caps to `count`.
     const res = await request(app.getHttpServer())
       .post('/v1/generate')
-      .send({ theme: 'space exploration', locale: 'en' });
-    expect(res.status).toBe(501);
-    expect(res.body).toMatchObject({ ok: false, error: { code: 'NOT_IMPLEMENTED' } });
+      .send({ theme: 'space exploration', locale: 'en', count: 25 });
+    expect(res.status).toBe(200);
+    expect(res.body.ok).toBe(true);
+    expect(Array.isArray(res.body.cards)).toBe(true);
+    expect(res.body.cards).toHaveLength(25);
+    expect(res.body.meta).toMatchObject({ promptVersion: expect.any(String), model: expect.any(String) });
   });
 
   it('POST /v1/generate with an invalid body returns the VALIDATION envelope', async () => {
