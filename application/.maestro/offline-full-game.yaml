@@ -1,0 +1,74 @@
+# Offline-first RELEASE GATE: play a full game end-to-end to the Winner screen
+# with no network on the critical path (spec §8 / cross-cutting invariant #1).
+#
+# Dev validation (Expo Go): runs against Metro to check the flow + selectors.
+# True airplane-mode gate: build a standalone app, set `appId: am.smartsoft.alias`,
+# drop the openLink step, and uncomment the setAirplaneMode line below — the flow
+# itself makes zero network calls, so it must pass with the radio off. See README.
+appId: host.exp.Exponent
+---
+# - setAirplaneMode: enabled   # standalone-build run only (kills Metro in Expo Go)
+- launchApp
+- openLink: exp://127.0.0.1:8081
+- extendedWaitUntil:
+    visible: 'Alias'
+    timeout: 40000
+
+# New game, made short + deterministic: Time mode, shortest timer (15s), 1 round
+# per team. Repeated Decrease taps clamp each stepper to its minimum from any
+# persisted Setup defaults. (No preset needed — the engine enforces
+# correctScore > 0 >= skipScore, so Correct beats Skip with no tie.)
+- tapOn:
+    text: 'Play|New game'
+- assertVisible: 'Preset'
+- scrollUntilVisible:
+    element:
+      text: 'Time Score'
+    direction: DOWN
+- tapOn: 'Time Score'
+- scrollUntilVisible:
+    element:
+      text: 'Round timer'
+    direction: DOWN
+- repeat:
+    times: 20
+    commands:
+      - tapOn: { text: 'Decrease', index: 0 } # Round timer → 15s
+- scrollUntilVisible:
+    element:
+      text: 'Rounds per team'
+    direction: DOWN
+- repeat:
+    times: 20
+    commands:
+      - tapOn: { text: 'Decrease', index: 1 } # Rounds per team → 1
+- scrollUntilVisible:
+    element:
+      text: 'Start Game'
+    direction: DOWN
+- tapOn: 'Start Game'
+
+# Round 1 — first team scores a correct word.
+- assertVisible: 'Start Round'
+- tapOn: 'Start Round'
+- assertVisible: 'Correct'
+- tapOn: 'Correct'
+- extendedWaitUntil:
+    visible: 'Continue'
+    timeout: 25000
+- tapOn: 'Continue'
+
+# Round 2 — second team skips, so the first team is the clear winner (no tie).
+- assertVisible: 'Start Round'
+- tapOn: 'Start Round'
+- tapOn: 'Skip'
+- extendedWaitUntil:
+    visible: 'Continue'
+    timeout: 25000
+- tapOn: 'Continue'
+
+# Winner screen — a full game completed offline.
+- extendedWaitUntil:
+    visible: 'New Game'
+    timeout: 10000
+- assertVisible: 'Restart'
